@@ -1,0 +1,447 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>H100 FP16 FA3-py vs FA3-cpp vs FAT</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 24px; color: #111827; background: #ffffff; }
+    h1 { font-size: 24px; margin: 0 0 8px; }
+    h2 { font-size: 18px; margin: 28px 0 12px; }
+    .grid-wrap { display: grid; grid-template-columns: repeat(auto-fit, minmax(600px, 1fr)); gap: 18px; }
+    .card { border: 1px solid #d1d5db; border-radius: 8px; padding: 8px; background: white; }
+    svg { width: 100%; height: auto; }
+    .axis { stroke: #111827; stroke-width: 1.2; }
+    .grid { stroke: #d1d5db; stroke-width: 0.8; stroke-dasharray: 3 4; }
+    .ref { stroke: #111827; stroke-width: 1; stroke-dasharray: 5 4; opacity: 0.7; }
+    .title { font-size: 15px; font-weight: 700; }
+    .tick { font-size: 11px; fill: #4b5563; }
+    .label { font-size: 12px; fill: #374151; }
+    .legend { font-size: 12px; fill: #111827; }
+    .annot { font-size: 10px; fill: #111827; }
+  </style>
+</head>
+<body>
+  <h1>H100 FP16 FA3-py vs FA3-cpp vs FAT</h1>
+  <p>Bar heights use the same full-attention FLOP formula as <code>plot/plot.py</code>.</p>
+  <h2>TFLOPS Bar Chart</h2>
+  <div class="grid-wrap">
+    <div class="card"><svg viewBox="0 0 640 390" role="img" aria-label="H100 FP16, headdim=64, non-causal">
+<text x="320.0" y="22" text-anchor="middle" class="title">H100 FP16, headdim=64, non-causal</text>
+<line x1="68" y1="332" x2="622" y2="332" class="axis"/>
+<line x1="68" y1="42" x2="68" y2="332" class="axis"/>
+<line x1="68" y1="332.00" x2="622" y2="332.00" class="grid"/>
+<text x="60" y="336.00" text-anchor="end" class="tick">0</text>
+<line x1="68" y1="274.00" x2="622" y2="274.00" class="grid"/>
+<text x="60" y="278.00" text-anchor="end" class="tick">73</text>
+<line x1="68" y1="216.00" x2="622" y2="216.00" class="grid"/>
+<text x="60" y="220.00" text-anchor="end" class="tick">146</text>
+<line x1="68" y1="158.00" x2="622" y2="158.00" class="grid"/>
+<text x="60" y="162.00" text-anchor="end" class="tick">219</text>
+<line x1="68" y1="100.00" x2="622" y2="100.00" class="grid"/>
+<text x="60" y="104.00" text-anchor="end" class="tick">292</text>
+<line x1="68" y1="42.00" x2="622" y2="42.00" class="grid"/>
+<text x="60" y="46.00" text-anchor="end" class="tick">365</text>
+<rect x="68.00" y="272.46" width="15" height="59.54" fill="#2563eb" opacity="0.82"/>
+<text x="75.50" y="268.46" text-anchor="middle" class="annot">75</text>
+<title>FA3-py 128: 74.86 TFLOPS</title>
+<rect x="87.00" y="272.84" width="15" height="59.16" fill="#dc2626" opacity="0.82"/>
+<text x="94.50" y="268.84" text-anchor="middle" class="annot">74</text>
+<title>FA3-cpp 128: 74.38 TFLOPS</title>
+<rect x="106.00" y="259.50" width="15" height="72.50" fill="#16a34a" opacity="0.82"/>
+<text x="113.50" y="255.50" text-anchor="middle" class="annot">91</text>
+<title>FAT 128: 91.15 TFLOPS</title>
+<text x="94.50" y="352" text-anchor="middle" class="tick">128</text>
+<rect x="139.57" y="259.25" width="15" height="72.75" fill="#2563eb" opacity="0.82"/>
+<text x="147.07" y="255.25" text-anchor="middle" class="annot">91</text>
+<title>FA3-py 256: 91.46 TFLOPS</title>
+<rect x="158.57" y="257.81" width="15" height="74.19" fill="#dc2626" opacity="0.82"/>
+<text x="166.07" y="253.81" text-anchor="middle" class="annot">93</text>
+<title>FA3-cpp 256: 93.28 TFLOPS</title>
+<rect x="177.57" y="231.90" width="15" height="100.10" fill="#16a34a" opacity="0.82"/>
+<text x="185.07" y="227.90" text-anchor="middle" class="annot">126</text>
+<title>FAT 256: 125.85 TFLOPS</title>
+<text x="166.07" y="352" text-anchor="middle" class="tick">256</text>
+<rect x="211.14" y="183.40" width="15" height="148.60" fill="#2563eb" opacity="0.82"/>
+<text x="218.64" y="179.40" text-anchor="middle" class="annot">187</text>
+<title>FA3-py 512: 186.83 TFLOPS</title>
+<rect x="230.14" y="183.94" width="15" height="148.06" fill="#dc2626" opacity="0.82"/>
+<text x="237.64" y="179.94" text-anchor="middle" class="annot">186</text>
+<title>FA3-cpp 512: 186.15 TFLOPS</title>
+<rect x="249.14" y="173.21" width="15" height="158.79" fill="#16a34a" opacity="0.82"/>
+<text x="256.64" y="169.21" text-anchor="middle" class="annot">200</text>
+<title>FAT 512: 199.64 TFLOPS</title>
+<text x="237.64" y="352" text-anchor="middle" class="tick">512</text>
+<rect x="282.71" y="159.06" width="15" height="172.94" fill="#2563eb" opacity="0.82"/>
+<text x="290.21" y="155.06" text-anchor="middle" class="annot">217</text>
+<title>FA3-py 1024: 217.43 TFLOPS</title>
+<rect x="301.71" y="158.89" width="15" height="173.11" fill="#dc2626" opacity="0.82"/>
+<text x="309.21" y="154.89" text-anchor="middle" class="annot">218</text>
+<title>FA3-cpp 1024: 217.64 TFLOPS</title>
+<rect x="320.71" y="147.73" width="15" height="184.27" fill="#16a34a" opacity="0.82"/>
+<text x="328.21" y="143.73" text-anchor="middle" class="annot">232</text>
+<title>FAT 1024: 231.67 TFLOPS</title>
+<text x="309.21" y="352" text-anchor="middle" class="tick">1k</text>
+<rect x="354.29" y="108.02" width="15" height="223.98" fill="#2563eb" opacity="0.82"/>
+<text x="361.79" y="104.02" text-anchor="middle" class="annot">282</text>
+<title>FA3-py 2048: 281.60 TFLOPS</title>
+<rect x="373.29" y="110.18" width="15" height="221.82" fill="#dc2626" opacity="0.82"/>
+<text x="380.79" y="106.18" text-anchor="middle" class="annot">279</text>
+<title>FA3-cpp 2048: 278.89 TFLOPS</title>
+<rect x="392.29" y="116.21" width="15" height="215.79" fill="#16a34a" opacity="0.82"/>
+<text x="399.79" y="112.21" text-anchor="middle" class="annot">271</text>
+<title>FAT 2048: 271.31 TFLOPS</title>
+<text x="380.79" y="352" text-anchor="middle" class="tick">2k</text>
+<rect x="425.86" y="95.27" width="15" height="236.73" fill="#2563eb" opacity="0.82"/>
+<text x="433.36" y="91.27" text-anchor="middle" class="annot">298</text>
+<title>FA3-py 4096: 297.63 TFLOPS</title>
+<rect x="444.86" y="98.26" width="15" height="233.74" fill="#dc2626" opacity="0.82"/>
+<text x="452.36" y="94.26" text-anchor="middle" class="annot">294</text>
+<title>FA3-cpp 4096: 293.88 TFLOPS</title>
+<rect x="463.86" y="106.51" width="15" height="225.49" fill="#16a34a" opacity="0.82"/>
+<text x="471.36" y="102.51" text-anchor="middle" class="annot">283</text>
+<title>FAT 4096: 283.50 TFLOPS</title>
+<text x="452.36" y="352" text-anchor="middle" class="tick">4k</text>
+<rect x="497.43" y="81.79" width="15" height="250.21" fill="#2563eb" opacity="0.82"/>
+<text x="504.93" y="77.79" text-anchor="middle" class="annot">315</text>
+<title>FA3-py 8192: 314.58 TFLOPS</title>
+<rect x="516.43" y="84.78" width="15" height="247.22" fill="#dc2626" opacity="0.82"/>
+<text x="523.93" y="80.78" text-anchor="middle" class="annot">311</text>
+<title>FA3-cpp 8192: 310.82 TFLOPS</title>
+<rect x="535.43" y="103.34" width="15" height="228.66" fill="#16a34a" opacity="0.82"/>
+<text x="542.93" y="99.34" text-anchor="middle" class="annot">287</text>
+<title>FAT 8192: 287.49 TFLOPS</title>
+<text x="523.93" y="352" text-anchor="middle" class="tick">8k</text>
+<rect x="569.00" y="79.83" width="15" height="252.17" fill="#2563eb" opacity="0.82"/>
+<text x="576.50" y="75.83" text-anchor="middle" class="annot">317</text>
+<title>FA3-py 16384: 317.05 TFLOPS</title>
+<rect x="588.00" y="81.72" width="15" height="250.28" fill="#dc2626" opacity="0.82"/>
+<text x="595.50" y="77.72" text-anchor="middle" class="annot">315</text>
+<title>FA3-cpp 16384: 314.66 TFLOPS</title>
+<rect x="607.00" y="101.57" width="15" height="230.43" fill="#16a34a" opacity="0.82"/>
+<text x="614.50" y="97.57" text-anchor="middle" class="annot">290</text>
+<title>FAT 16384: 289.70 TFLOPS</title>
+<text x="595.50" y="352" text-anchor="middle" class="tick">16k</text>
+<rect x="80" y="47" width="14" height="14" fill="#2563eb" opacity="0.82"/>
+<text x="100" y="59" class="legend">FA3-py</text>
+<rect x="168" y="47" width="14" height="14" fill="#dc2626" opacity="0.82"/>
+<text x="188" y="59" class="legend">FA3-cpp</text>
+<rect x="256" y="47" width="14" height="14" fill="#16a34a" opacity="0.82"/>
+<text x="276" y="59" class="legend">FAT</text>
+<text x="345.0" y="374" text-anchor="middle" class="label">Sequence Length</text>
+<text x="16" y="187.0" transform="rotate(-90 16 187.0)" text-anchor="middle" class="label">TFLOPS</text>
+</svg></div><div class="card"><svg viewBox="0 0 640 390" role="img" aria-label="H100 FP16, headdim=64, causal">
+<text x="320.0" y="22" text-anchor="middle" class="title">H100 FP16, headdim=64, causal</text>
+<line x1="68" y1="332" x2="622" y2="332" class="axis"/>
+<line x1="68" y1="42" x2="68" y2="332" class="axis"/>
+<line x1="68" y1="332.00" x2="622" y2="332.00" class="grid"/>
+<text x="60" y="336.00" text-anchor="end" class="tick">0</text>
+<line x1="68" y1="274.00" x2="622" y2="274.00" class="grid"/>
+<text x="60" y="278.00" text-anchor="end" class="tick">73</text>
+<line x1="68" y1="216.00" x2="622" y2="216.00" class="grid"/>
+<text x="60" y="220.00" text-anchor="end" class="tick">145</text>
+<line x1="68" y1="158.00" x2="622" y2="158.00" class="grid"/>
+<text x="60" y="162.00" text-anchor="end" class="tick">218</text>
+<line x1="68" y1="100.00" x2="622" y2="100.00" class="grid"/>
+<text x="60" y="104.00" text-anchor="end" class="tick">291</text>
+<line x1="68" y1="42.00" x2="622" y2="42.00" class="grid"/>
+<text x="60" y="46.00" text-anchor="end" class="tick">363</text>
+<rect x="68.00" y="295.24" width="15" height="36.76" fill="#2563eb" opacity="0.82"/>
+<text x="75.50" y="291.24" text-anchor="middle" class="annot">46</text>
+<title>FA3-py 128: 46.06 TFLOPS</title>
+<rect x="87.00" y="295.69" width="15" height="36.31" fill="#dc2626" opacity="0.82"/>
+<text x="94.50" y="291.69" text-anchor="middle" class="annot">45</text>
+<title>FA3-cpp 128: 45.49 TFLOPS</title>
+<rect x="106.00" y="295.81" width="15" height="36.19" fill="#16a34a" opacity="0.82"/>
+<text x="113.50" y="291.81" text-anchor="middle" class="annot">45</text>
+<title>FAT 128: 45.34 TFLOPS</title>
+<text x="94.50" y="352" text-anchor="middle" class="tick">128</text>
+<rect x="139.57" y="281.79" width="15" height="50.21" fill="#2563eb" opacity="0.82"/>
+<text x="147.07" y="277.79" text-anchor="middle" class="annot">63</text>
+<title>FA3-py 256: 62.92 TFLOPS</title>
+<rect x="158.57" y="282.30" width="15" height="49.70" fill="#dc2626" opacity="0.82"/>
+<text x="166.07" y="278.30" text-anchor="middle" class="annot">62</text>
+<title>FA3-cpp 256: 62.27 TFLOPS</title>
+<rect x="177.57" y="284.27" width="15" height="47.73" fill="#16a34a" opacity="0.82"/>
+<text x="185.07" y="280.27" text-anchor="middle" class="annot">60</text>
+<title>FAT 256: 59.81 TFLOPS</title>
+<text x="166.07" y="352" text-anchor="middle" class="tick">256</text>
+<rect x="211.14" y="231.34" width="15" height="100.66" fill="#2563eb" opacity="0.82"/>
+<text x="218.64" y="227.34" text-anchor="middle" class="annot">126</text>
+<title>FA3-py 512: 126.13 TFLOPS</title>
+<rect x="230.14" y="232.04" width="15" height="99.96" fill="#dc2626" opacity="0.82"/>
+<text x="237.64" y="228.04" text-anchor="middle" class="annot">125</text>
+<title>FA3-cpp 512: 125.25 TFLOPS</title>
+<rect x="249.14" y="236.65" width="15" height="95.35" fill="#16a34a" opacity="0.82"/>
+<text x="256.64" y="232.65" text-anchor="middle" class="annot">119</text>
+<title>FAT 512: 119.47 TFLOPS</title>
+<text x="237.64" y="352" text-anchor="middle" class="tick">512</text>
+<rect x="282.71" y="199.21" width="15" height="132.79" fill="#2563eb" opacity="0.82"/>
+<text x="290.21" y="195.21" text-anchor="middle" class="annot">166</text>
+<title>FA3-py 1024: 166.38 TFLOPS</title>
+<rect x="301.71" y="197.44" width="15" height="134.56" fill="#dc2626" opacity="0.82"/>
+<text x="309.21" y="193.44" text-anchor="middle" class="annot">169</text>
+<title>FA3-cpp 1024: 168.60 TFLOPS</title>
+<rect x="320.71" y="204.79" width="15" height="127.21" fill="#16a34a" opacity="0.82"/>
+<text x="328.21" y="200.79" text-anchor="middle" class="annot">159</text>
+<title>FAT 1024: 159.40 TFLOPS</title>
+<text x="309.21" y="352" text-anchor="middle" class="tick">1k</text>
+<rect x="354.29" y="143.66" width="15" height="188.34" fill="#2563eb" opacity="0.82"/>
+<text x="361.79" y="139.66" text-anchor="middle" class="annot">236</text>
+<title>FA3-py 2048: 235.99 TFLOPS</title>
+<rect x="373.29" y="143.29" width="15" height="188.71" fill="#dc2626" opacity="0.82"/>
+<text x="380.79" y="139.29" text-anchor="middle" class="annot">236</text>
+<title>FA3-cpp 2048: 236.45 TFLOPS</title>
+<rect x="392.29" y="154.39" width="15" height="177.61" fill="#16a34a" opacity="0.82"/>
+<text x="399.79" y="150.39" text-anchor="middle" class="annot">223</text>
+<title>FAT 2048: 222.55 TFLOPS</title>
+<text x="380.79" y="352" text-anchor="middle" class="tick">2k</text>
+<rect x="425.86" y="116.08" width="15" height="215.92" fill="#2563eb" opacity="0.82"/>
+<text x="433.36" y="112.08" text-anchor="middle" class="annot">271</text>
+<title>FA3-py 4096: 270.55 TFLOPS</title>
+<rect x="444.86" y="116.98" width="15" height="215.02" fill="#dc2626" opacity="0.82"/>
+<text x="452.36" y="112.98" text-anchor="middle" class="annot">269</text>
+<title>FA3-cpp 4096: 269.41 TFLOPS</title>
+<rect x="463.86" y="130.31" width="15" height="201.69" fill="#16a34a" opacity="0.82"/>
+<text x="471.36" y="126.31" text-anchor="middle" class="annot">253</text>
+<title>FAT 4096: 252.71 TFLOPS</title>
+<text x="452.36" y="352" text-anchor="middle" class="tick">4k</text>
+<rect x="497.43" y="90.09" width="15" height="241.91" fill="#2563eb" opacity="0.82"/>
+<text x="504.93" y="86.09" text-anchor="middle" class="annot">303</text>
+<title>FA3-py 8192: 303.11 TFLOPS</title>
+<rect x="516.43" y="90.68" width="15" height="241.32" fill="#dc2626" opacity="0.82"/>
+<text x="523.93" y="86.68" text-anchor="middle" class="annot">302</text>
+<title>FA3-cpp 8192: 302.37 TFLOPS</title>
+<rect x="535.43" y="106.09" width="15" height="225.91" fill="#16a34a" opacity="0.82"/>
+<text x="542.93" y="102.09" text-anchor="middle" class="annot">283</text>
+<title>FAT 8192: 283.06 TFLOPS</title>
+<text x="523.93" y="352" text-anchor="middle" class="tick">8k</text>
+<rect x="569.00" y="79.83" width="15" height="252.17" fill="#2563eb" opacity="0.82"/>
+<text x="576.50" y="75.83" text-anchor="middle" class="annot">316</text>
+<title>FA3-py 16384: 315.97 TFLOPS</title>
+<rect x="588.00" y="83.84" width="15" height="248.16" fill="#dc2626" opacity="0.82"/>
+<text x="595.50" y="79.84" text-anchor="middle" class="annot">311</text>
+<title>FA3-cpp 16384: 310.95 TFLOPS</title>
+<rect x="607.00" y="97.15" width="15" height="234.85" fill="#16a34a" opacity="0.82"/>
+<text x="614.50" y="93.15" text-anchor="middle" class="annot">294</text>
+<title>FAT 16384: 294.27 TFLOPS</title>
+<text x="595.50" y="352" text-anchor="middle" class="tick">16k</text>
+<rect x="80" y="47" width="14" height="14" fill="#2563eb" opacity="0.82"/>
+<text x="100" y="59" class="legend">FA3-py</text>
+<rect x="168" y="47" width="14" height="14" fill="#dc2626" opacity="0.82"/>
+<text x="188" y="59" class="legend">FA3-cpp</text>
+<rect x="256" y="47" width="14" height="14" fill="#16a34a" opacity="0.82"/>
+<text x="276" y="59" class="legend">FAT</text>
+<text x="345.0" y="374" text-anchor="middle" class="label">Sequence Length</text>
+<text x="16" y="187.0" transform="rotate(-90 16 187.0)" text-anchor="middle" class="label">TFLOPS</text>
+</svg></div><div class="card"><svg viewBox="0 0 640 390" role="img" aria-label="H100 FP16, headdim=128, non-causal">
+<text x="320.0" y="22" text-anchor="middle" class="title">H100 FP16, headdim=128, non-causal</text>
+<line x1="68" y1="332" x2="622" y2="332" class="axis"/>
+<line x1="68" y1="42" x2="68" y2="332" class="axis"/>
+<line x1="68" y1="332.00" x2="622" y2="332.00" class="grid"/>
+<text x="60" y="336.00" text-anchor="end" class="tick">0</text>
+<line x1="68" y1="274.00" x2="622" y2="274.00" class="grid"/>
+<text x="60" y="278.00" text-anchor="end" class="tick">90</text>
+<line x1="68" y1="216.00" x2="622" y2="216.00" class="grid"/>
+<text x="60" y="220.00" text-anchor="end" class="tick">180</text>
+<line x1="68" y1="158.00" x2="622" y2="158.00" class="grid"/>
+<text x="60" y="162.00" text-anchor="end" class="tick">270</text>
+<line x1="68" y1="100.00" x2="622" y2="100.00" class="grid"/>
+<text x="60" y="104.00" text-anchor="end" class="tick">360</text>
+<line x1="68" y1="42.00" x2="622" y2="42.00" class="grid"/>
+<text x="60" y="46.00" text-anchor="end" class="tick">450</text>
+<rect x="68.00" y="263.18" width="15" height="68.82" fill="#2563eb" opacity="0.82"/>
+<text x="75.50" y="259.18" text-anchor="middle" class="annot">107</text>
+<title>FA3-py 128: 106.81 TFLOPS</title>
+<rect x="87.00" y="268.26" width="15" height="63.74" fill="#dc2626" opacity="0.82"/>
+<text x="94.50" y="264.26" text-anchor="middle" class="annot">99</text>
+<title>FA3-cpp 128: 98.92 TFLOPS</title>
+<rect x="106.00" y="261.88" width="15" height="70.12" fill="#16a34a" opacity="0.82"/>
+<text x="113.50" y="257.88" text-anchor="middle" class="annot">109</text>
+<title>FAT 128: 108.83 TFLOPS</title>
+<text x="94.50" y="352" text-anchor="middle" class="tick">128</text>
+<rect x="139.57" y="210.77" width="15" height="121.23" fill="#2563eb" opacity="0.82"/>
+<text x="147.07" y="206.77" text-anchor="middle" class="annot">188</text>
+<title>FA3-py 256: 188.15 TFLOPS</title>
+<rect x="158.57" y="235.81" width="15" height="96.19" fill="#dc2626" opacity="0.82"/>
+<text x="166.07" y="231.81" text-anchor="middle" class="annot">149</text>
+<title>FA3-cpp 256: 149.28 TFLOPS</title>
+<rect x="177.57" y="204.06" width="15" height="127.94" fill="#16a34a" opacity="0.82"/>
+<text x="185.07" y="200.06" text-anchor="middle" class="annot">199</text>
+<title>FAT 256: 198.57 TFLOPS</title>
+<text x="166.07" y="352" text-anchor="middle" class="tick">256</text>
+<rect x="211.14" y="149.12" width="15" height="182.88" fill="#2563eb" opacity="0.82"/>
+<text x="218.64" y="145.12" text-anchor="middle" class="annot">284</text>
+<title>FA3-py 512: 283.83 TFLOPS</title>
+<rect x="230.14" y="186.98" width="15" height="145.02" fill="#dc2626" opacity="0.82"/>
+<text x="237.64" y="182.98" text-anchor="middle" class="annot">225</text>
+<title>FA3-cpp 512: 225.07 TFLOPS</title>
+<rect x="249.14" y="150.60" width="15" height="181.40" fill="#16a34a" opacity="0.82"/>
+<text x="256.64" y="146.60" text-anchor="middle" class="annot">282</text>
+<title>FAT 512: 281.53 TFLOPS</title>
+<text x="237.64" y="352" text-anchor="middle" class="tick">512</text>
+<rect x="282.71" y="143.57" width="15" height="188.43" fill="#2563eb" opacity="0.82"/>
+<text x="290.21" y="139.57" text-anchor="middle" class="annot">292</text>
+<title>FA3-py 1024: 292.45 TFLOPS</title>
+<rect x="301.71" y="171.41" width="15" height="160.59" fill="#dc2626" opacity="0.82"/>
+<text x="309.21" y="167.41" text-anchor="middle" class="annot">249</text>
+<title>FA3-cpp 1024: 249.23 TFLOPS</title>
+<rect x="320.71" y="116.48" width="15" height="215.52" fill="#16a34a" opacity="0.82"/>
+<text x="328.21" y="112.48" text-anchor="middle" class="annot">334</text>
+<title>FAT 1024: 334.49 TFLOPS</title>
+<text x="309.21" y="352" text-anchor="middle" class="tick">1k</text>
+<rect x="354.29" y="113.18" width="15" height="218.82" fill="#2563eb" opacity="0.82"/>
+<text x="361.79" y="109.18" text-anchor="middle" class="annot">340</text>
+<title>FA3-py 2048: 339.60 TFLOPS</title>
+<rect x="373.29" y="162.00" width="15" height="170.00" fill="#dc2626" opacity="0.82"/>
+<text x="380.79" y="158.00" text-anchor="middle" class="annot">264</text>
+<title>FA3-cpp 2048: 263.84 TFLOPS</title>
+<rect x="392.29" y="97.27" width="15" height="234.73" fill="#16a34a" opacity="0.82"/>
+<text x="399.79" y="93.27" text-anchor="middle" class="annot">364</text>
+<title>FAT 2048: 364.30 TFLOPS</title>
+<text x="380.79" y="352" text-anchor="middle" class="tick">2k</text>
+<rect x="425.86" y="103.49" width="15" height="228.51" fill="#2563eb" opacity="0.82"/>
+<text x="433.36" y="99.49" text-anchor="middle" class="annot">355</text>
+<title>FA3-py 4096: 354.65 TFLOPS</title>
+<rect x="444.86" y="156.99" width="15" height="175.01" fill="#dc2626" opacity="0.82"/>
+<text x="452.36" y="152.99" text-anchor="middle" class="annot">272</text>
+<title>FA3-cpp 4096: 271.62 TFLOPS</title>
+<rect x="463.86" y="85.88" width="15" height="246.12" fill="#16a34a" opacity="0.82"/>
+<text x="471.36" y="81.88" text-anchor="middle" class="annot">382</text>
+<title>FAT 4096: 381.98 TFLOPS</title>
+<text x="452.36" y="352" text-anchor="middle" class="tick">4k</text>
+<rect x="497.43" y="90.29" width="15" height="241.71" fill="#2563eb" opacity="0.82"/>
+<text x="504.93" y="86.29" text-anchor="middle" class="annot">375</text>
+<title>FA3-py 8192: 375.13 TFLOPS</title>
+<rect x="516.43" y="150.59" width="15" height="181.41" fill="#dc2626" opacity="0.82"/>
+<text x="523.93" y="146.59" text-anchor="middle" class="annot">282</text>
+<title>FA3-cpp 8192: 281.55 TFLOPS</title>
+<rect x="535.43" y="82.61" width="15" height="249.39" fill="#16a34a" opacity="0.82"/>
+<text x="542.93" y="78.61" text-anchor="middle" class="annot">387</text>
+<title>FAT 8192: 387.05 TFLOPS</title>
+<text x="523.93" y="352" text-anchor="middle" class="tick">8k</text>
+<rect x="569.00" y="85.43" width="15" height="246.57" fill="#2563eb" opacity="0.82"/>
+<text x="576.50" y="81.43" text-anchor="middle" class="annot">383</text>
+<title>FA3-py 16384: 382.67 TFLOPS</title>
+<rect x="588.00" y="149.91" width="15" height="182.09" fill="#dc2626" opacity="0.82"/>
+<text x="595.50" y="145.91" text-anchor="middle" class="annot">283</text>
+<title>FA3-cpp 16384: 282.60 TFLOPS</title>
+<rect x="607.00" y="79.83" width="15" height="252.17" fill="#16a34a" opacity="0.82"/>
+<text x="614.50" y="75.83" text-anchor="middle" class="annot">391</text>
+<title>FAT 16384: 391.37 TFLOPS</title>
+<text x="595.50" y="352" text-anchor="middle" class="tick">16k</text>
+<rect x="80" y="47" width="14" height="14" fill="#2563eb" opacity="0.82"/>
+<text x="100" y="59" class="legend">FA3-py</text>
+<rect x="168" y="47" width="14" height="14" fill="#dc2626" opacity="0.82"/>
+<text x="188" y="59" class="legend">FA3-cpp</text>
+<rect x="256" y="47" width="14" height="14" fill="#16a34a" opacity="0.82"/>
+<text x="276" y="59" class="legend">FAT</text>
+<text x="345.0" y="374" text-anchor="middle" class="label">Sequence Length</text>
+<text x="16" y="187.0" transform="rotate(-90 16 187.0)" text-anchor="middle" class="label">TFLOPS</text>
+</svg></div><div class="card"><svg viewBox="0 0 640 390" role="img" aria-label="H100 FP16, headdim=128, causal">
+<text x="320.0" y="22" text-anchor="middle" class="title">H100 FP16, headdim=128, causal</text>
+<line x1="68" y1="332" x2="622" y2="332" class="axis"/>
+<line x1="68" y1="42" x2="68" y2="332" class="axis"/>
+<line x1="68" y1="332.00" x2="622" y2="332.00" class="grid"/>
+<text x="60" y="336.00" text-anchor="end" class="tick">0</text>
+<line x1="68" y1="274.00" x2="622" y2="274.00" class="grid"/>
+<text x="60" y="278.00" text-anchor="end" class="tick">88</text>
+<line x1="68" y1="216.00" x2="622" y2="216.00" class="grid"/>
+<text x="60" y="220.00" text-anchor="end" class="tick">176</text>
+<line x1="68" y1="158.00" x2="622" y2="158.00" class="grid"/>
+<text x="60" y="162.00" text-anchor="end" class="tick">264</text>
+<line x1="68" y1="100.00" x2="622" y2="100.00" class="grid"/>
+<text x="60" y="104.00" text-anchor="end" class="tick">351</text>
+<line x1="68" y1="42.00" x2="622" y2="42.00" class="grid"/>
+<text x="60" y="46.00" text-anchor="end" class="tick">439</text>
+<rect x="68.00" y="296.40" width="15" height="35.60" fill="#2563eb" opacity="0.82"/>
+<text x="75.50" y="292.40" text-anchor="middle" class="annot">54</text>
+<title>FA3-py 128: 53.91 TFLOPS</title>
+<rect x="87.00" y="296.40" width="15" height="35.60" fill="#dc2626" opacity="0.82"/>
+<text x="94.50" y="292.40" text-anchor="middle" class="annot">54</text>
+<title>FA3-cpp 128: 53.92 TFLOPS</title>
+<rect x="106.00" y="298.32" width="15" height="33.68" fill="#16a34a" opacity="0.82"/>
+<text x="113.50" y="294.32" text-anchor="middle" class="annot">51</text>
+<title>FAT 128: 51.01 TFLOPS</title>
+<text x="94.50" y="352" text-anchor="middle" class="tick">128</text>
+<rect x="139.57" y="270.31" width="15" height="61.69" fill="#2563eb" opacity="0.82"/>
+<text x="147.07" y="266.31" text-anchor="middle" class="annot">93</text>
+<title>FA3-py 256: 93.43 TFLOPS</title>
+<rect x="158.57" y="266.45" width="15" height="65.55" fill="#dc2626" opacity="0.82"/>
+<text x="166.07" y="262.45" text-anchor="middle" class="annot">99</text>
+<title>FA3-cpp 256: 99.28 TFLOPS</title>
+<rect x="177.57" y="270.21" width="15" height="61.79" fill="#16a34a" opacity="0.82"/>
+<text x="185.07" y="266.21" text-anchor="middle" class="annot">94</text>
+<title>FAT 256: 93.58 TFLOPS</title>
+<text x="166.07" y="352" text-anchor="middle" class="tick">256</text>
+<rect x="211.14" y="223.16" width="15" height="108.84" fill="#2563eb" opacity="0.82"/>
+<text x="218.64" y="219.16" text-anchor="middle" class="annot">165</text>
+<title>FA3-py 512: 164.83 TFLOPS</title>
+<rect x="230.14" y="211.94" width="15" height="120.06" fill="#dc2626" opacity="0.82"/>
+<text x="237.64" y="207.94" text-anchor="middle" class="annot">182</text>
+<title>FA3-cpp 512: 181.82 TFLOPS</title>
+<rect x="249.14" y="223.45" width="15" height="108.55" fill="#16a34a" opacity="0.82"/>
+<text x="256.64" y="219.45" text-anchor="middle" class="annot">164</text>
+<title>FAT 512: 164.38 TFLOPS</title>
+<text x="237.64" y="352" text-anchor="middle" class="tick">512</text>
+<rect x="282.71" y="158.48" width="15" height="173.52" fill="#2563eb" opacity="0.82"/>
+<text x="290.21" y="154.48" text-anchor="middle" class="annot">263</text>
+<title>FA3-py 1024: 262.78 TFLOPS</title>
+<rect x="301.71" y="145.19" width="15" height="186.81" fill="#dc2626" opacity="0.82"/>
+<text x="309.21" y="141.19" text-anchor="middle" class="annot">283</text>
+<title>FA3-cpp 1024: 282.92 TFLOPS</title>
+<rect x="320.71" y="172.78" width="15" height="159.22" fill="#16a34a" opacity="0.82"/>
+<text x="328.21" y="168.78" text-anchor="middle" class="annot">241</text>
+<title>FAT 1024: 241.13 TFLOPS</title>
+<text x="309.21" y="352" text-anchor="middle" class="tick">1k</text>
+<rect x="354.29" y="161.88" width="15" height="170.12" fill="#2563eb" opacity="0.82"/>
+<text x="361.79" y="157.88" text-anchor="middle" class="annot">258</text>
+<title>FA3-py 2048: 257.64 TFLOPS</title>
+<rect x="373.29" y="136.85" width="15" height="195.15" fill="#dc2626" opacity="0.82"/>
+<text x="380.79" y="132.85" text-anchor="middle" class="annot">296</text>
+<title>FA3-cpp 2048: 295.54 TFLOPS</title>
+<rect x="392.29" y="133.07" width="15" height="198.93" fill="#16a34a" opacity="0.82"/>
+<text x="399.79" y="129.07" text-anchor="middle" class="annot">301</text>
+<title>FAT 2048: 301.26 TFLOPS</title>
+<text x="380.79" y="352" text-anchor="middle" class="tick">2k</text>
+<rect x="425.86" y="128.65" width="15" height="203.35" fill="#2563eb" opacity="0.82"/>
+<text x="433.36" y="124.65" text-anchor="middle" class="annot">308</text>
+<title>FA3-py 4096: 307.96 TFLOPS</title>
+<rect x="444.86" y="97.65" width="15" height="234.35" fill="#dc2626" opacity="0.82"/>
+<text x="452.36" y="93.65" text-anchor="middle" class="annot">355</text>
+<title>FA3-cpp 4096: 354.90 TFLOPS</title>
+<rect x="463.86" y="104.80" width="15" height="227.20" fill="#16a34a" opacity="0.82"/>
+<text x="471.36" y="100.80" text-anchor="middle" class="annot">344</text>
+<title>FAT 4096: 344.08 TFLOPS</title>
+<text x="452.36" y="352" text-anchor="middle" class="tick">4k</text>
+<rect x="497.43" y="116.57" width="15" height="215.43" fill="#2563eb" opacity="0.82"/>
+<text x="504.93" y="112.57" text-anchor="middle" class="annot">326</text>
+<title>FA3-py 8192: 326.26 TFLOPS</title>
+<rect x="516.43" y="85.51" width="15" height="246.49" fill="#dc2626" opacity="0.82"/>
+<text x="523.93" y="81.51" text-anchor="middle" class="annot">373</text>
+<title>FA3-cpp 8192: 373.30 TFLOPS</title>
+<rect x="535.43" y="87.44" width="15" height="244.56" fill="#16a34a" opacity="0.82"/>
+<text x="542.93" y="83.44" text-anchor="middle" class="annot">370</text>
+<title>FAT 8192: 370.37 TFLOPS</title>
+<text x="523.93" y="352" text-anchor="middle" class="tick">8k</text>
+<rect x="569.00" y="113.17" width="15" height="218.83" fill="#2563eb" opacity="0.82"/>
+<text x="576.50" y="109.17" text-anchor="middle" class="annot">331</text>
+<title>FA3-py 16384: 331.40 TFLOPS</title>
+<rect x="588.00" y="90.17" width="15" height="241.83" fill="#dc2626" opacity="0.82"/>
+<text x="595.50" y="86.17" text-anchor="middle" class="annot">366</text>
+<title>FA3-cpp 16384: 366.24 TFLOPS</title>
+<rect x="607.00" y="79.83" width="15" height="252.17" fill="#16a34a" opacity="0.82"/>
+<text x="614.50" y="75.83" text-anchor="middle" class="annot">382</text>
+<title>FAT 16384: 381.90 TFLOPS</title>
+<text x="595.50" y="352" text-anchor="middle" class="tick">16k</text>
+<rect x="80" y="47" width="14" height="14" fill="#2563eb" opacity="0.82"/>
+<text x="100" y="59" class="legend">FA3-py</text>
+<rect x="168" y="47" width="14" height="14" fill="#dc2626" opacity="0.82"/>
+<text x="188" y="59" class="legend">FA3-cpp</text>
+<rect x="256" y="47" width="14" height="14" fill="#16a34a" opacity="0.82"/>
+<text x="276" y="59" class="legend">FAT</text>
+<text x="345.0" y="374" text-anchor="middle" class="label">Sequence Length</text>
+<text x="16" y="187.0" transform="rotate(-90 16 187.0)" text-anchor="middle" class="label">TFLOPS</text>
+</svg></div>
+  </div>
+</body>
+</html>

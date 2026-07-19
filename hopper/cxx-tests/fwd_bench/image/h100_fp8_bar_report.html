@@ -1,0 +1,343 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>H100 FP8 FA-T vs FA3</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 24px; color: #111827; background: #ffffff; }
+    h1 { font-size: 24px; margin: 0 0 8px; }
+    h2 { font-size: 18px; margin: 28px 0 12px; }
+    .grid-wrap { display: grid; grid-template-columns: repeat(auto-fit, minmax(600px, 1fr)); gap: 18px; }
+    .card { border: 1px solid #d1d5db; border-radius: 8px; padding: 8px; background: white; }
+    svg { width: 100%; height: auto; }
+    .axis { stroke: #111827; stroke-width: 1.2; }
+    .grid { stroke: #d1d5db; stroke-width: 0.8; stroke-dasharray: 3 4; }
+    .ref { stroke: #111827; stroke-width: 1; stroke-dasharray: 5 4; opacity: 0.7; }
+    .title { font-size: 15px; font-weight: 700; }
+    .tick { font-size: 11px; fill: #4b5563; }
+    .label { font-size: 12px; fill: #374151; }
+    .legend { font-size: 12px; fill: #111827; }
+    .annot { font-size: 10px; fill: #111827; }
+  </style>
+</head>
+<body>
+  <h1>H100 FP8 FA-T vs FA3</h1>
+  <p>Bar heights use the same full-attention FLOP formula as <code>plot/plot.py</code>.</p>
+  <h2>TFLOPS Bar Chart</h2>
+  <div class="grid-wrap">
+    <div class="card"><svg viewBox="0 0 640 390" role="img" aria-label="H100 FP8, headdim=64, non-causal">
+<text x="320.0" y="22" text-anchor="middle" class="title">H100 FP8, headdim=64, non-causal</text>
+<line x1="68" y1="332" x2="622" y2="332" class="axis"/>
+<line x1="68" y1="42" x2="68" y2="332" class="axis"/>
+<line x1="68" y1="332.00" x2="622" y2="332.00" class="grid"/>
+<text x="60" y="336.00" text-anchor="end" class="tick">0</text>
+<line x1="68" y1="274.00" x2="622" y2="274.00" class="grid"/>
+<text x="60" y="278.00" text-anchor="end" class="tick">77</text>
+<line x1="68" y1="216.00" x2="622" y2="216.00" class="grid"/>
+<text x="60" y="220.00" text-anchor="end" class="tick">154</text>
+<line x1="68" y1="158.00" x2="622" y2="158.00" class="grid"/>
+<text x="60" y="162.00" text-anchor="end" class="tick">232</text>
+<line x1="68" y1="100.00" x2="622" y2="100.00" class="grid"/>
+<text x="60" y="104.00" text-anchor="end" class="tick">309</text>
+<line x1="68" y1="42.00" x2="622" y2="42.00" class="grid"/>
+<text x="60" y="46.00" text-anchor="end" class="tick">386</text>
+<rect x="75.00" y="270.74" width="18" height="61.26" fill="#2563eb" opacity="0.82"/>
+<text x="84.00" y="266.74" text-anchor="middle" class="annot">82</text>
+<title>FA-T 128: 81.50 TFLOPS</title>
+<rect x="97.00" y="264.13" width="18" height="67.87" fill="#dc2626" opacity="0.82"/>
+<text x="106.00" y="260.13" text-anchor="middle" class="annot">90</text>
+<title>FA3 128: 90.30 TFLOPS</title>
+<text x="95.00" y="352" text-anchor="middle" class="tick">128</text>
+<rect x="146.43" y="239.04" width="18" height="92.96" fill="#2563eb" opacity="0.82"/>
+<text x="155.43" y="235.04" text-anchor="middle" class="annot">124</text>
+<title>FA-T 256: 123.68 TFLOPS</title>
+<rect x="168.43" y="239.48" width="18" height="92.52" fill="#dc2626" opacity="0.82"/>
+<text x="177.43" y="235.48" text-anchor="middle" class="annot">123</text>
+<title>FA3 256: 123.10 TFLOPS</title>
+<text x="166.43" y="352" text-anchor="middle" class="tick">256</text>
+<rect x="217.86" y="188.35" width="18" height="143.65" fill="#2563eb" opacity="0.82"/>
+<text x="226.86" y="184.35" text-anchor="middle" class="annot">191</text>
+<title>FA-T 512: 191.13 TFLOPS</title>
+<rect x="239.86" y="181.48" width="18" height="150.52" fill="#dc2626" opacity="0.82"/>
+<text x="248.86" y="177.48" text-anchor="middle" class="annot">200</text>
+<title>FA3 512: 200.27 TFLOPS</title>
+<text x="237.86" y="352" text-anchor="middle" class="tick">512</text>
+<rect x="289.29" y="149.92" width="18" height="182.08" fill="#2563eb" opacity="0.82"/>
+<text x="298.29" y="145.92" text-anchor="middle" class="annot">242</text>
+<title>FA-T 1024: 242.26 TFLOPS</title>
+<rect x="311.29" y="145.08" width="18" height="186.92" fill="#dc2626" opacity="0.82"/>
+<text x="320.29" y="141.08" text-anchor="middle" class="annot">249</text>
+<title>FA3 1024: 248.69 TFLOPS</title>
+<text x="309.29" y="352" text-anchor="middle" class="tick">1k</text>
+<rect x="360.71" y="107.34" width="18" height="224.66" fill="#2563eb" opacity="0.82"/>
+<text x="369.71" y="103.34" text-anchor="middle" class="annot">299</text>
+<title>FA-T 2048: 298.91 TFLOPS</title>
+<rect x="382.71" y="96.14" width="18" height="235.86" fill="#dc2626" opacity="0.82"/>
+<text x="391.71" y="92.14" text-anchor="middle" class="annot">314</text>
+<title>FA3 2048: 313.81 TFLOPS</title>
+<text x="380.71" y="352" text-anchor="middle" class="tick">2k</text>
+<rect x="432.14" y="97.47" width="18" height="234.53" fill="#2563eb" opacity="0.82"/>
+<text x="441.14" y="93.47" text-anchor="middle" class="annot">312</text>
+<title>FA-T 4096: 312.04 TFLOPS</title>
+<rect x="454.14" y="85.03" width="18" height="246.97" fill="#dc2626" opacity="0.82"/>
+<text x="463.14" y="81.03" text-anchor="middle" class="annot">329</text>
+<title>FA3 4096: 328.59 TFLOPS</title>
+<text x="452.14" y="352" text-anchor="middle" class="tick">4k</text>
+<rect x="503.57" y="91.77" width="18" height="240.23" fill="#2563eb" opacity="0.82"/>
+<text x="512.57" y="87.77" text-anchor="middle" class="annot">320</text>
+<title>FA-T 8192: 319.62 TFLOPS</title>
+<rect x="525.57" y="83.34" width="18" height="248.66" fill="#dc2626" opacity="0.82"/>
+<text x="534.57" y="79.34" text-anchor="middle" class="annot">331</text>
+<title>FA3 8192: 330.84 TFLOPS</title>
+<text x="523.57" y="352" text-anchor="middle" class="tick">8k</text>
+<rect x="575.00" y="86.36" width="18" height="245.64" fill="#2563eb" opacity="0.82"/>
+<text x="584.00" y="82.36" text-anchor="middle" class="annot">327</text>
+<title>FA-T 16384: 326.82 TFLOPS</title>
+<rect x="597.00" y="79.83" width="18" height="252.17" fill="#dc2626" opacity="0.82"/>
+<text x="606.00" y="75.83" text-anchor="middle" class="annot">336</text>
+<title>FA3 16384: 335.52 TFLOPS</title>
+<text x="595.00" y="352" text-anchor="middle" class="tick">16k</text>
+<rect x="80" y="47" width="14" height="14" fill="#2563eb" opacity="0.82"/>
+<text x="100" y="59" class="legend">FA-T</text>
+<rect x="162" y="47" width="14" height="14" fill="#dc2626" opacity="0.82"/>
+<text x="182" y="59" class="legend">FA3</text>
+<text x="345.0" y="374" text-anchor="middle" class="label">Sequence Length</text>
+<text x="16" y="187.0" transform="rotate(-90 16 187.0)" text-anchor="middle" class="label">TFLOPS</text>
+</svg></div><div class="card"><svg viewBox="0 0 640 390" role="img" aria-label="H100 FP8, headdim=64, causal">
+<text x="320.0" y="22" text-anchor="middle" class="title">H100 FP8, headdim=64, causal</text>
+<line x1="68" y1="332" x2="622" y2="332" class="axis"/>
+<line x1="68" y1="42" x2="68" y2="332" class="axis"/>
+<line x1="68" y1="332.00" x2="622" y2="332.00" class="grid"/>
+<text x="60" y="336.00" text-anchor="end" class="tick">0</text>
+<line x1="68" y1="274.00" x2="622" y2="274.00" class="grid"/>
+<text x="60" y="278.00" text-anchor="end" class="tick">79</text>
+<line x1="68" y1="216.00" x2="622" y2="216.00" class="grid"/>
+<text x="60" y="220.00" text-anchor="end" class="tick">158</text>
+<line x1="68" y1="158.00" x2="622" y2="158.00" class="grid"/>
+<text x="60" y="162.00" text-anchor="end" class="tick">237</text>
+<line x1="68" y1="100.00" x2="622" y2="100.00" class="grid"/>
+<text x="60" y="104.00" text-anchor="end" class="tick">316</text>
+<line x1="68" y1="42.00" x2="622" y2="42.00" class="grid"/>
+<text x="60" y="46.00" text-anchor="end" class="tick">395</text>
+<rect x="75.00" y="303.24" width="18" height="28.76" fill="#2563eb" opacity="0.82"/>
+<text x="84.00" y="299.24" text-anchor="middle" class="annot">39</text>
+<title>FA-T 128: 39.21 TFLOPS</title>
+<rect x="97.00" y="303.14" width="18" height="28.86" fill="#dc2626" opacity="0.82"/>
+<text x="106.00" y="299.14" text-anchor="middle" class="annot">39</text>
+<title>FA3 128: 39.34 TFLOPS</title>
+<text x="95.00" y="352" text-anchor="middle" class="tick">128</text>
+<rect x="146.43" y="292.09" width="18" height="39.91" fill="#2563eb" opacity="0.82"/>
+<text x="155.43" y="288.09" text-anchor="middle" class="annot">54</text>
+<title>FA-T 256: 54.40 TFLOPS</title>
+<rect x="168.43" y="292.26" width="18" height="39.74" fill="#dc2626" opacity="0.82"/>
+<text x="177.43" y="288.26" text-anchor="middle" class="annot">54</text>
+<title>FA3 256: 54.18 TFLOPS</title>
+<text x="166.43" y="352" text-anchor="middle" class="tick">256</text>
+<rect x="217.86" y="253.02" width="18" height="78.98" fill="#2563eb" opacity="0.82"/>
+<text x="226.86" y="249.02" text-anchor="middle" class="annot">108</text>
+<title>FA-T 512: 107.67 TFLOPS</title>
+<rect x="239.86" y="254.30" width="18" height="77.70" fill="#dc2626" opacity="0.82"/>
+<text x="248.86" y="250.30" text-anchor="middle" class="annot">106</text>
+<title>FA3 512: 105.92 TFLOPS</title>
+<text x="237.86" y="352" text-anchor="middle" class="tick">512</text>
+<rect x="289.29" y="210.73" width="18" height="121.27" fill="#2563eb" opacity="0.82"/>
+<text x="298.29" y="206.73" text-anchor="middle" class="annot">165</text>
+<title>FA-T 1024: 165.32 TFLOPS</title>
+<rect x="311.29" y="213.41" width="18" height="118.59" fill="#dc2626" opacity="0.82"/>
+<text x="320.29" y="209.41" text-anchor="middle" class="annot">162</text>
+<title>FA3 1024: 161.67 TFLOPS</title>
+<text x="309.29" y="352" text-anchor="middle" class="tick">1k</text>
+<rect x="360.71" y="154.74" width="18" height="177.26" fill="#2563eb" opacity="0.82"/>
+<text x="369.71" y="150.74" text-anchor="middle" class="annot">242</text>
+<title>FA-T 2048: 241.64 TFLOPS</title>
+<rect x="382.71" y="158.74" width="18" height="173.26" fill="#dc2626" opacity="0.82"/>
+<text x="391.71" y="154.74" text-anchor="middle" class="annot">236</text>
+<title>FA3 2048: 236.19 TFLOPS</title>
+<text x="380.71" y="352" text-anchor="middle" class="tick">2k</text>
+<rect x="432.14" y="121.45" width="18" height="210.55" fill="#2563eb" opacity="0.82"/>
+<text x="441.14" y="117.45" text-anchor="middle" class="annot">287</text>
+<title>FA-T 4096: 287.02 TFLOPS</title>
+<rect x="454.14" y="126.49" width="18" height="205.51" fill="#dc2626" opacity="0.82"/>
+<text x="463.14" y="122.49" text-anchor="middle" class="annot">280</text>
+<title>FA3 4096: 280.15 TFLOPS</title>
+<text x="452.14" y="352" text-anchor="middle" class="tick">4k</text>
+<rect x="503.57" y="89.36" width="18" height="242.64" fill="#2563eb" opacity="0.82"/>
+<text x="512.57" y="85.36" text-anchor="middle" class="annot">331</text>
+<title>FA-T 8192: 330.76 TFLOPS</title>
+<rect x="525.57" y="95.50" width="18" height="236.50" fill="#dc2626" opacity="0.82"/>
+<text x="534.57" y="91.50" text-anchor="middle" class="annot">322</text>
+<title>FA3 8192: 322.40 TFLOPS</title>
+<text x="523.57" y="352" text-anchor="middle" class="tick">8k</text>
+<rect x="575.00" y="82.56" width="18" height="249.44" fill="#2563eb" opacity="0.82"/>
+<text x="584.00" y="78.56" text-anchor="middle" class="annot">340</text>
+<title>FA-T 16384: 340.04 TFLOPS</title>
+<rect x="597.00" y="79.83" width="18" height="252.17" fill="#dc2626" opacity="0.82"/>
+<text x="606.00" y="75.83" text-anchor="middle" class="annot">344</text>
+<title>FA3 16384: 343.76 TFLOPS</title>
+<text x="595.00" y="352" text-anchor="middle" class="tick">16k</text>
+<rect x="80" y="47" width="14" height="14" fill="#2563eb" opacity="0.82"/>
+<text x="100" y="59" class="legend">FA-T</text>
+<rect x="162" y="47" width="14" height="14" fill="#dc2626" opacity="0.82"/>
+<text x="182" y="59" class="legend">FA3</text>
+<text x="345.0" y="374" text-anchor="middle" class="label">Sequence Length</text>
+<text x="16" y="187.0" transform="rotate(-90 16 187.0)" text-anchor="middle" class="label">TFLOPS</text>
+</svg></div><div class="card"><svg viewBox="0 0 640 390" role="img" aria-label="H100 FP8, headdim=128, non-causal">
+<text x="320.0" y="22" text-anchor="middle" class="title">H100 FP8, headdim=128, non-causal</text>
+<line x1="68" y1="332" x2="622" y2="332" class="axis"/>
+<line x1="68" y1="42" x2="68" y2="332" class="axis"/>
+<line x1="68" y1="332.00" x2="622" y2="332.00" class="grid"/>
+<text x="60" y="336.00" text-anchor="end" class="tick">0</text>
+<line x1="68" y1="274.00" x2="622" y2="274.00" class="grid"/>
+<text x="60" y="278.00" text-anchor="end" class="tick">116</text>
+<line x1="68" y1="216.00" x2="622" y2="216.00" class="grid"/>
+<text x="60" y="220.00" text-anchor="end" class="tick">232</text>
+<line x1="68" y1="158.00" x2="622" y2="158.00" class="grid"/>
+<text x="60" y="162.00" text-anchor="end" class="tick">349</text>
+<line x1="68" y1="100.00" x2="622" y2="100.00" class="grid"/>
+<text x="60" y="104.00" text-anchor="end" class="tick">465</text>
+<line x1="68" y1="42.00" x2="622" y2="42.00" class="grid"/>
+<text x="60" y="46.00" text-anchor="end" class="tick">581</text>
+<rect x="75.00" y="265.02" width="18" height="66.98" fill="#2563eb" opacity="0.82"/>
+<text x="84.00" y="261.02" text-anchor="middle" class="annot">134</text>
+<title>FA-T 128: 134.22 TFLOPS</title>
+<rect x="97.00" y="264.98" width="18" height="67.02" fill="#dc2626" opacity="0.82"/>
+<text x="106.00" y="260.98" text-anchor="middle" class="annot">134</text>
+<title>FA3 128: 134.30 TFLOPS</title>
+<text x="95.00" y="352" text-anchor="middle" class="tick">128</text>
+<rect x="146.43" y="238.32" width="18" height="93.68" fill="#2563eb" opacity="0.82"/>
+<text x="155.43" y="234.32" text-anchor="middle" class="annot">188</text>
+<title>FA-T 256: 187.71 TFLOPS</title>
+<rect x="168.43" y="236.11" width="18" height="95.89" fill="#dc2626" opacity="0.82"/>
+<text x="177.43" y="232.11" text-anchor="middle" class="annot">192</text>
+<title>FA3 256: 192.14 TFLOPS</title>
+<text x="166.43" y="352" text-anchor="middle" class="tick">256</text>
+<rect x="217.86" y="188.06" width="18" height="143.94" fill="#2563eb" opacity="0.82"/>
+<text x="226.86" y="184.06" text-anchor="middle" class="annot">288</text>
+<title>FA-T 512: 288.42 TFLOPS</title>
+<rect x="239.86" y="187.41" width="18" height="144.59" fill="#dc2626" opacity="0.82"/>
+<text x="248.86" y="183.41" text-anchor="middle" class="annot">290</text>
+<title>FA3 512: 289.73 TFLOPS</title>
+<text x="237.86" y="352" text-anchor="middle" class="tick">512</text>
+<rect x="289.29" y="135.18" width="18" height="196.82" fill="#2563eb" opacity="0.82"/>
+<text x="298.29" y="131.18" text-anchor="middle" class="annot">394</text>
+<title>FA-T 1024: 394.39 TFLOPS</title>
+<rect x="311.29" y="138.28" width="18" height="193.72" fill="#dc2626" opacity="0.82"/>
+<text x="320.29" y="134.28" text-anchor="middle" class="annot">388</text>
+<title>FA3 1024: 388.17 TFLOPS</title>
+<text x="309.29" y="352" text-anchor="middle" class="tick">1k</text>
+<rect x="360.71" y="115.82" width="18" height="216.18" fill="#2563eb" opacity="0.82"/>
+<text x="369.71" y="111.82" text-anchor="middle" class="annot">433</text>
+<title>FA-T 2048: 433.17 TFLOPS</title>
+<rect x="382.71" y="120.44" width="18" height="211.56" fill="#dc2626" opacity="0.82"/>
+<text x="391.71" y="116.44" text-anchor="middle" class="annot">424</text>
+<title>FA3 2048: 423.91 TFLOPS</title>
+<text x="380.71" y="352" text-anchor="middle" class="tick">2k</text>
+<rect x="432.14" y="93.70" width="18" height="238.30" fill="#2563eb" opacity="0.82"/>
+<text x="441.14" y="89.70" text-anchor="middle" class="annot">477</text>
+<title>FA-T 4096: 477.49 TFLOPS</title>
+<rect x="454.14" y="99.26" width="18" height="232.74" fill="#dc2626" opacity="0.82"/>
+<text x="463.14" y="95.26" text-anchor="middle" class="annot">466</text>
+<title>FA3 4096: 466.36 TFLOPS</title>
+<text x="452.14" y="352" text-anchor="middle" class="tick">4k</text>
+<rect x="503.57" y="82.45" width="18" height="249.55" fill="#2563eb" opacity="0.82"/>
+<text x="512.57" y="78.45" text-anchor="middle" class="annot">500</text>
+<title>FA-T 8192: 500.04 TFLOPS</title>
+<rect x="525.57" y="88.71" width="18" height="243.29" fill="#dc2626" opacity="0.82"/>
+<text x="534.57" y="84.71" text-anchor="middle" class="annot">487</text>
+<title>FA3 8192: 487.48 TFLOPS</title>
+<text x="523.57" y="352" text-anchor="middle" class="tick">8k</text>
+<rect x="575.00" y="79.83" width="18" height="252.17" fill="#2563eb" opacity="0.82"/>
+<text x="584.00" y="75.83" text-anchor="middle" class="annot">505</text>
+<title>FA-T 16384: 505.29 TFLOPS</title>
+<rect x="597.00" y="86.70" width="18" height="245.30" fill="#dc2626" opacity="0.82"/>
+<text x="606.00" y="82.70" text-anchor="middle" class="annot">492</text>
+<title>FA3 16384: 491.52 TFLOPS</title>
+<text x="595.00" y="352" text-anchor="middle" class="tick">16k</text>
+<rect x="80" y="47" width="14" height="14" fill="#2563eb" opacity="0.82"/>
+<text x="100" y="59" class="legend">FA-T</text>
+<rect x="162" y="47" width="14" height="14" fill="#dc2626" opacity="0.82"/>
+<text x="182" y="59" class="legend">FA3</text>
+<text x="345.0" y="374" text-anchor="middle" class="label">Sequence Length</text>
+<text x="16" y="187.0" transform="rotate(-90 16 187.0)" text-anchor="middle" class="label">TFLOPS</text>
+</svg></div><div class="card"><svg viewBox="0 0 640 390" role="img" aria-label="H100 FP8, headdim=128, causal">
+<text x="320.0" y="22" text-anchor="middle" class="title">H100 FP8, headdim=128, causal</text>
+<line x1="68" y1="332" x2="622" y2="332" class="axis"/>
+<line x1="68" y1="42" x2="68" y2="332" class="axis"/>
+<line x1="68" y1="332.00" x2="622" y2="332.00" class="grid"/>
+<text x="60" y="336.00" text-anchor="end" class="tick">0</text>
+<line x1="68" y1="274.00" x2="622" y2="274.00" class="grid"/>
+<text x="60" y="278.00" text-anchor="end" class="tick">111</text>
+<line x1="68" y1="216.00" x2="622" y2="216.00" class="grid"/>
+<text x="60" y="220.00" text-anchor="end" class="tick">222</text>
+<line x1="68" y1="158.00" x2="622" y2="158.00" class="grid"/>
+<text x="60" y="162.00" text-anchor="end" class="tick">333</text>
+<line x1="68" y1="100.00" x2="622" y2="100.00" class="grid"/>
+<text x="60" y="104.00" text-anchor="end" class="tick">445</text>
+<line x1="68" y1="42.00" x2="622" y2="42.00" class="grid"/>
+<text x="60" y="46.00" text-anchor="end" class="tick">556</text>
+<rect x="75.00" y="299.78" width="18" height="32.22" fill="#2563eb" opacity="0.82"/>
+<text x="84.00" y="295.78" text-anchor="middle" class="annot">62</text>
+<title>FA-T 128: 61.74 TFLOPS</title>
+<rect x="97.00" y="299.50" width="18" height="32.50" fill="#dc2626" opacity="0.82"/>
+<text x="106.00" y="295.50" text-anchor="middle" class="annot">62</text>
+<title>FA3 128: 62.28 TFLOPS</title>
+<text x="95.00" y="352" text-anchor="middle" class="tick">128</text>
+<rect x="146.43" y="279.06" width="18" height="52.94" fill="#2563eb" opacity="0.82"/>
+<text x="155.43" y="275.06" text-anchor="middle" class="annot">101</text>
+<title>FA-T 256: 101.46 TFLOPS</title>
+<rect x="168.43" y="278.51" width="18" height="53.49" fill="#dc2626" opacity="0.82"/>
+<text x="177.43" y="274.51" text-anchor="middle" class="annot">103</text>
+<title>FA3 256: 102.50 TFLOPS</title>
+<text x="166.43" y="352" text-anchor="middle" class="tick">256</text>
+<rect x="217.86" y="244.20" width="18" height="87.80" fill="#2563eb" opacity="0.82"/>
+<text x="226.86" y="240.20" text-anchor="middle" class="annot">168</text>
+<title>FA-T 512: 168.26 TFLOPS</title>
+<rect x="239.86" y="242.55" width="18" height="89.45" fill="#dc2626" opacity="0.82"/>
+<text x="248.86" y="238.55" text-anchor="middle" class="annot">171</text>
+<title>FA3 512: 171.43 TFLOPS</title>
+<text x="237.86" y="352" text-anchor="middle" class="tick">512</text>
+<rect x="289.29" y="195.49" width="18" height="136.51" fill="#2563eb" opacity="0.82"/>
+<text x="298.29" y="191.49" text-anchor="middle" class="annot">262</text>
+<title>FA-T 1024: 261.61 TFLOPS</title>
+<rect x="311.29" y="194.40" width="18" height="137.60" fill="#dc2626" opacity="0.82"/>
+<text x="320.29" y="190.40" text-anchor="middle" class="annot">264</text>
+<title>FA3 1024: 263.70 TFLOPS</title>
+<text x="309.29" y="352" text-anchor="middle" class="tick">1k</text>
+<rect x="360.71" y="153.52" width="18" height="178.48" fill="#2563eb" opacity="0.82"/>
+<text x="369.71" y="149.52" text-anchor="middle" class="annot">342</text>
+<title>FA-T 2048: 342.03 TFLOPS</title>
+<rect x="382.71" y="151.68" width="18" height="180.32" fill="#dc2626" opacity="0.82"/>
+<text x="391.71" y="147.68" text-anchor="middle" class="annot">346</text>
+<title>FA3 2048: 345.57 TFLOPS</title>
+<text x="380.71" y="352" text-anchor="middle" class="tick">2k</text>
+<rect x="432.14" y="118.82" width="18" height="213.18" fill="#2563eb" opacity="0.82"/>
+<text x="441.14" y="114.82" text-anchor="middle" class="annot">409</text>
+<title>FA-T 4096: 408.53 TFLOPS</title>
+<rect x="454.14" y="116.65" width="18" height="215.35" fill="#dc2626" opacity="0.82"/>
+<text x="463.14" y="112.65" text-anchor="middle" class="annot">413</text>
+<title>FA3 4096: 412.70 TFLOPS</title>
+<text x="452.14" y="352" text-anchor="middle" class="tick">4k</text>
+<rect x="503.57" y="95.40" width="18" height="236.60" fill="#2563eb" opacity="0.82"/>
+<text x="512.57" y="91.40" text-anchor="middle" class="annot">453</text>
+<title>FA-T 8192: 453.43 TFLOPS</title>
+<rect x="525.57" y="92.79" width="18" height="239.21" fill="#dc2626" opacity="0.82"/>
+<text x="534.57" y="88.79" text-anchor="middle" class="annot">458</text>
+<title>FA3 8192: 458.43 TFLOPS</title>
+<text x="523.57" y="352" text-anchor="middle" class="tick">8k</text>
+<rect x="575.00" y="82.69" width="18" height="249.31" fill="#2563eb" opacity="0.82"/>
+<text x="584.00" y="78.69" text-anchor="middle" class="annot">478</text>
+<title>FA-T 16384: 477.79 TFLOPS</title>
+<rect x="597.00" y="79.83" width="18" height="252.17" fill="#dc2626" opacity="0.82"/>
+<text x="606.00" y="75.83" text-anchor="middle" class="annot">483</text>
+<title>FA3 16384: 483.27 TFLOPS</title>
+<text x="595.00" y="352" text-anchor="middle" class="tick">16k</text>
+<rect x="80" y="47" width="14" height="14" fill="#2563eb" opacity="0.82"/>
+<text x="100" y="59" class="legend">FA-T</text>
+<rect x="162" y="47" width="14" height="14" fill="#dc2626" opacity="0.82"/>
+<text x="182" y="59" class="legend">FA3</text>
+<text x="345.0" y="374" text-anchor="middle" class="label">Sequence Length</text>
+<text x="16" y="187.0" transform="rotate(-90 16 187.0)" text-anchor="middle" class="label">TFLOPS</text>
+</svg></div>
+  </div>
+</body>
+</html>
