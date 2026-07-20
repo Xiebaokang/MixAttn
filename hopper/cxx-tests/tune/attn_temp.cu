@@ -39,6 +39,7 @@ struct TConfig {
   int q_reg_k_tiles = 0;
   int num_consumer = 2;
   int use_scheduler_barrier = 0;
+  int rescale_o_before_gemm = 0;
 };
 
 constexpr int kBatch = 1;

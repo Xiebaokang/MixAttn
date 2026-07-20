@@ -1,0 +1,942 @@
+stage 1 / base structure: 32 configs, register-usage-level=5
+CUDA sources: 32 generated, 0 cached
++ cmake -Wno-dev -S /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cxx-tests/tune/src/test_b1_h16_s30720_d64_fp16_noncausal/build/project_rl5 -B /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cxx-tests/tune/src/test_b1_h16_s30720_d64_fp16_noncausal/build/rl5 -DCMAKE_BUILD_TYPE=Release -DCMAKE_CUDA_ARCHITECTURES=90a
+-- The CXX compiler identification is GNU 11.4.0
+-- The CUDA compiler identification is NVIDIA 12.8.61 with host compiler GNU 11.4.0
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /usr/bin/c++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Detecting CUDA compiler ABI info
+-- Detecting CUDA compiler ABI info - done
+-- Check for working CUDA compiler: /usr/local/cuda/bin/nvcc - skipped
+-- Detecting CUDA compile features
+-- Detecting CUDA compile features - done
+-- Hopper root dir: /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper
+-- FA Python env dir: /home/xiebaokang/miniconda3/envs/torch
+-- Found Python lib dir: /home/xiebaokang/miniconda3/envs/torch/lib/python3.10
+-- Found CUDA: /usr/local/cuda (found version "12.8") 
+-- Found CUDAToolkit: /usr/local/cuda/include (found version "12.8.61")
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD - Success
+-- Found Threads: TRUE
+-- PyTorch: CUDA detected: 12.8
+-- PyTorch: CUDA nvcc is: /usr/local/cuda/bin/nvcc
+-- PyTorch: CUDA toolkit directory: /usr/local/cuda
+-- PyTorch: Header version is: 12.8
+-- Found Python: /home/xiebaokang/miniconda3/envs/torch/bin/python3.10 (found version "3.10.19") found components: Interpreter
+CMake Warning at /home/xiebaokang/miniconda3/envs/torch/lib/python3.10/site-packages/torch/share/cmake/Caffe2/public/cuda.cmake:140 (message):
+  Failed to compute shorthash for libnvrtc.so
+Call Stack (most recent call first):
+  /home/xiebaokang/miniconda3/envs/torch/lib/python3.10/site-packages/torch/share/cmake/Caffe2/Caffe2Config.cmake:86 (include)
+  /home/xiebaokang/miniconda3/envs/torch/lib/python3.10/site-packages/torch/share/cmake/Torch/TorchConfig.cmake:68 (find_package)
+  /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cxx-tests/cmake/flashVenv.cmake:32 (find_package)
+  CMakeLists.txt:7 (include)
+
+
+-- Could NOT find nvtx3 (missing: nvtx3_dir) 
+CMake Warning at /home/xiebaokang/miniconda3/envs/torch/lib/python3.10/site-packages/torch/share/cmake/Caffe2/public/cuda.cmake:184 (message):
+  Cannot find NVTX3, find old NVTX instead
+Call Stack (most recent call first):
+  /home/xiebaokang/miniconda3/envs/torch/lib/python3.10/site-packages/torch/share/cmake/Caffe2/Caffe2Config.cmake:86 (include)
+  /home/xiebaokang/miniconda3/envs/torch/lib/python3.10/site-packages/torch/share/cmake/Torch/TorchConfig.cmake:68 (find_package)
+  /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cxx-tests/cmake/flashVenv.cmake:32 (find_package)
+  CMakeLists.txt:7 (include)
+
+
+-- USE_CUDNN is set to 0. Compiling without cuDNN support
+-- USE_CUSPARSELT is set to 0. Compiling without cuSPARSELt support
+-- USE_CUDSS is set to 0. Compiling without cuDSS support
+-- USE_CUFILE is set to 0. Compiling without cuFile support
+-- Added CUDA NVCC flags for: -gencode;arch=compute_90a,code=sm_90a
+CMake Warning at /home/xiebaokang/miniconda3/envs/torch/lib/python3.10/site-packages/torch/share/cmake/Torch/TorchConfig.cmake:22 (message):
+  static library kineto_LIBRARY-NOTFOUND not found.
+Call Stack (most recent call first):
+  /home/xiebaokang/miniconda3/envs/torch/lib/python3.10/site-packages/torch/share/cmake/Torch/TorchConfig.cmake:121 (append_torchlib_if_found)
+  /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cxx-tests/cmake/flashVenv.cmake:32 (find_package)
+  CMakeLists.txt:7 (include)
+
+
+-- Found Torch: /home/xiebaokang/miniconda3/envs/torch/lib/python3.10/site-packages/torch/lib/libtorch.so
+-- Found Python: /home/xiebaokang/miniconda3/envs/torch/bin/python3.10 (found version "3.10.19") found components: Interpreter Development Development.Module Development.Embed
+-- CUTLASS include dir: /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cutlass/include
+-- Custom API dir: /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cxx-tests/custom_api
+-- Configuring done (3.0s)
+-- Generating done (0.1s)
+-- Build files have been written to: /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cxx-tests/tune/src/test_b1_h16_s30720_d64_fp16_noncausal/build/rl5
++ cmake --build /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cxx-tests/tune/src/test_b1_h16_s30720_d64_fp16_noncausal/build/rl5 --target fa3_prepare_scheduler --parallel 1
+[ 50%] Building CUDA object CMakeFiles/fa3_prepare_scheduler.dir/home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/flash_prepare_scheduler.cu.o
+[100%] Linking CUDA shared library libfa3_prepare_scheduler.so
+[100%] Built target fa3_prepare_scheduler
+building 32 config target(s) with 16 parallel worker(s)
+[1/32] bm192_bn112_st1_prd56_cra256_p1_q0_nc1_sb0_rb0: compile failed (33.7s)
+[ 50%] Built target fa3_prepare_scheduler
+[275%] Building CUDA object CMakeFiles/bm192_bn112_st1_prd56_cra256_p1_q0_nc1_sb0_rb0.dir/home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cxx-tests/tune/src/test_b1_h16_s30720_d64_fp16_noncausal/cuda_source/bm192_bn112_st1_prd56_cra256_p1_q0_nc1_sb0_rb0.cu.o
+/home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/epilogue_fwd.hpp(451): error: static assertion failed
+          static_assert(kBlockM <= NumEpilogueThreads);
+          ^
+          detected during:
+            instantiation of "void flash::CollectiveEpilogueFwd<TileShape_MNK_PV_, ClusterShape_, Element_, ArchTag_, NumEpilogueThreads_, Varlen_, PackGQA_, Split_, FP8PermuteCol>::store_zero(const flash::CollectiveEpilogueFwd<TileShape_MNK_PV_, ClusterShape_, Element_, ArchTag_, NumEpilogueThreads_, Varlen_, PackGQA_, Split_, FP8PermuteCol>::Params &, int, const cute::tuple<int32_t, int32_t, int32_t, int32_t> &) [with TileShape_MNK_PV_=cute::tuple<cute::C<192>, cute::C<64>, cute::C<112>>, ClusterShape_=cute::tuple<cute::_1, cute::_1, cute::_1>, Element_=cutlass::half_t, ArchTag_=cutlass::arch::Sm90, NumEpilogueThreads_=128, Varlen_=false, PackGQA_=false, Split_=false, FP8PermuteCol=false]" at line 597 of /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/flash_fwd_kernel_sm90.h
+            instantiation of "void flash::FlashAttnFwdSm90<CollectiveMainloop_, CollectiveEpilogue_, TileScheduler_>::operator()(const flash::FlashAttnFwdSm90<CollectiveMainloop_, CollectiveEpilogue_, TileScheduler_>::Params &, char *) [with CollectiveMainloop_=flash::CollectiveMainloopFwdSm90<<unnamed>::TConfig{192, 112, 1, 56U, 256U, 1, 0, 1, 0, 0}, 1, cute::tuple<cute::_1, cute::_1, cute::_1>, cute::tuple<cute::C<192>, cute::C<112>, cute::C<64>>, 64, cutlass::half_t, float, cutlass::arch::Sm90, false, false, false, false, false, false, false, true, true, false, false, false>, CollectiveEpilogue_=flash::CollectiveEpilogueFwd<cute::tuple<cute::C<192>, cute::C<64>, cute::C<112>>, cute::tuple<cute::_1, cute::_1, cute::_1>, cutlass::half_t, cutlass::arch::Sm90, 128, false, false, false, false>, TileScheduler_=flash::StaticPersistentTileScheduler<false>]" at line 41 of /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/utils.h
+            instantiation of "void flash::enable_sm90_or_later<Kernel>::operator()(Args &&...) [with Kernel=flash::FlashAttnFwdSm90<flash::CollectiveMainloopFwdSm90<<unnamed>::TConfig{192, 112, 1, 56U, 256U, 1, 0, 1, 0, 0}, 1, cute::tuple<cute::_1, cute::_1, cute::_1>, cute::tuple<cute::C<192>, cute::C<112>, cute::C<64>>, 64, cutlass::half_t, float, cutlass::arch::Sm90, false, false, false, false, false, false, false, true, true, false, false, false>, flash::CollectiveEpilogueFwd<cute::tuple<cute::C<192>, cute::C<64>, cute::C<112>>, cute::tuple<cute::_1, cute::_1, cute::_1>, cutlass::half_t, cutlass::arch::Sm90, 128, false, false, false, false>, flash::StaticPersistentTileScheduler<false>>, Args=<const flash::FlashAttnFwdSm90<flash::CollectiveMainloopFwdSm90<<unnamed>::TConfig{192, 112, 1, 56U, 256U, 1, 0, 1, 0, 0}, 1, cute::tuple<cute::_1, cute::_1, cute::_1>, cute::tuple<cute::C<192>, cute::C<112>, cute::C<64>>, 64, cutlass::half_t, float, cutlass::arch::Sm90, false, false, false, false, false, false, false, true, true, false, false, false>, flash::CollectiveEpilogueFwd<cute::tuple<cute::C<192>, cute::C<64>, cute::C<112>>, cute::tuple<cute::_1, cute::_1, cute::_1>, cutlass::half_t, cutlass::arch::Sm90, 128, false, false, false, false>, flash::StaticPersistentTileScheduler<false>>::Params &, char (&)[]>]" at line 122 of /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cutlass/include/cutlass/device_kernel.h
+            instantiation of "void cutlass::device_kernel<Operator>(Operator::Params) [with Operator=flash::enable_sm90_or_later<flash::FlashAttnFwdSm90<flash::CollectiveMainloopFwdSm90<<unnamed>::TConfig{192, 112, 1, 56U, 256U, 1, 0, 1, 0, 0}, 1, cute::tuple<cute::_1, cute::_1, cute::_1>, cute::tuple<cute::C<192>, cute::C<112>, cute::C<64>>, 64, cutlass::half_t, float, cutlass::arch::Sm90, false, false, false, false, false, false, false, true, true, false, false, false>, flash::CollectiveEpilogueFwd<cute::tuple<cute::C<192>, cute::C<64>, cute::C<112>>, cute::tuple<cute::_1, cute::_1, cute::_1>, cutlass::half_t, cutlass::arch::Sm90, 128, false, false, false, false>, flash::StaticPersistentTileScheduler<false>>>]" at line 544 of /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/flash_fwd_launch_template.h
+            instantiation of "void run_flash_fwd_custom<Arch,Config,kHeadDim,kHeadDimV,ClusterM,Element,ElementOut,Is_causal,Is_local,Has_softcap,Varlen,PagedKVNonTMA,AppendKV,HasQv,PackGQA,Split,V_colmajor>(Flash_fwd_params &, cudaStream_t) [with Arch=90, Config=<unnamed>::TConfig{192, 112, 1, 56U, 256U, 1, 0, 1, 0, 0}, kHeadDim=64, kHeadDimV=64, ClusterM=1, Element=cutlass::half_t, ElementOut=cutlass::half_t, Is_causal=false, Is_local=false, Has_softcap=false, Varlen=false, PagedKVNonTMA=false, AppendKV=false, HasQv=false, PackGQA=false, Split=false, V_colmajor=false]" at line 573 of /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/flash_fwd_launch_template.h
+            instantiation of "void run_mha_fwd_custom_fixed_<Arch,Config,T,kHeadDim,kHeadDimV,IsCausal>(Flash_fwd_params &, cudaStream_t) [with Arch=90, Config=<unnamed>::TConfig{192, 112, 1, 56U, 256U, 1, 0, 1, 0, 0}, T=cutlass::half_t, kHeadDim=64, kHeadDimV=64, IsCausal=false]" at line 797 of /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cxx-tests/custom_api/custom_api.cuh
+            instantiation of "std::vector<at::Tensor, std::allocator<at::Tensor>> custom_mha_fwd_template_core<Config,Dtype,HeadDim,HeadDimV,IsCausal>(at::Tensor &, const at::Tensor &, const at::Tensor &, std::optional<at::Tensor> &, float, int, int, float, int, std::optional<__nv_bool>, int) [with Config=<unnamed>::TConfig{192, 112, 1, 56U, 256U, 1, 0, 1, 0, 0}, Dtype=cutlass::half_t, HeadDim=64, HeadDimV=64, IsCausal=false]" at line 860 of /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cxx-tests/custom_api/custom_api.cuh
+            instantiation of "std::vector<at::Tensor, std::allocator<at::Tensor>> custom_mha_fwd_noncausal<Config,Dtype,HeadDim,HeadDimV>(at::Tensor &, const at::Tensor &, const at::Tensor &, std::optional<at::Tensor> &, float, int, int, int, float, std::optional<__nv_bool>, int) [with Config=<unnamed>::TConfig{192, 112, 1, 56U, 256U, 1, 0, 1, 0, 0}, Dtype=cutlass::half_t, HeadDim=64, HeadDimV=64]" at line 113 of /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cxx-tests/tune/src/test_b1_h16_s30720_d64_fp16_noncausal/cuda_source/bm192_bn112_st1_prd56_cra256_p1_q0_nc1_sb0_rb0.cu
+            instantiation of "void <unnamed>::benchmark<Element,InputType,IsCausal>(const char *, const <unnamed>::RunOptions &) [with Element=cutlass::half_t, InputType=c10::ScalarType::Half, IsCausal=false]" at line 223 of /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cxx-tests/tune/src/test_b1_h16_s30720_d64_fp16_noncausal/cuda_source/bm192_bn112_st1_prd56_cra256_p1_q0_nc1_sb0_rb0.cu
+
+1 error detected in the compilation of "/home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cxx-tests/tune/src/test_b1_h16_s30720_d64_fp16_noncausal/cuda_source/bm192_bn112_st1_prd56_cra256_p1_q0_nc1_sb0_rb0.cu".
+gmake[3]: *** [CMakeFiles/bm192_bn112_st1_prd56_cra256_p1_q0_nc1_sb0_rb0.dir/build.make:80: CMakeFiles/bm192_bn112_st1_prd56_cra256_p1_q0_nc1_sb0_rb0.dir/home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cxx-tests/tune/src/test_b1_h16_s30720_d64_fp16_noncausal/cuda_source/bm192_bn112_st1_prd56_cra256_p1_q0_nc1_sb0_rb0.cu.o] Error 1
+gmake[2]: *** [CMakeFiles/Makefile2:439: CMakeFiles/bm192_bn112_st1_prd56_cra256_p1_q0_nc1_sb0_rb0.dir/all] Error 2
+gmake[1]: *** [CMakeFiles/Makefile2:446: CMakeFiles/bm192_bn112_st1_prd56_cra256_p1_q0_nc1_sb0_rb0.dir/rule] Error 2
+gmake: *** [Makefile:228: bm192_bn112_st1_prd56_cra256_p1_q0_nc1_sb0_rb0] Error 2
+[2/32] bm256_bn160_st3_prd56_cra256_p7_q0_nc1_sb0_rb0: compile failed (34.9s)
+[ 50%] Built target fa3_prepare_scheduler
+[125%] Building CUDA object CMakeFiles/bm256_bn160_st3_prd56_cra256_p7_q0_nc1_sb0_rb0.dir/home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cxx-tests/tune/src/test_b1_h16_s30720_d64_fp16_noncausal/cuda_source/bm256_bn160_st3_prd56_cra256_p7_q0_nc1_sb0_rb0.cu.o
+/home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/epilogue_fwd.hpp(451): error: static assertion failed
+          static_assert(kBlockM <= NumEpilogueThreads);
+          ^
+          detected during:
+            instantiation of "void flash::CollectiveEpilogueFwd<TileShape_MNK_PV_, ClusterShape_, Element_, ArchTag_, NumEpilogueThreads_, Varlen_, PackGQA_, Split_, FP8PermuteCol>::store_zero(const flash::CollectiveEpilogueFwd<TileShape_MNK_PV_, ClusterShape_, Element_, ArchTag_, NumEpilogueThreads_, Varlen_, PackGQA_, Split_, FP8PermuteCol>::Params &, int, const cute::tuple<int32_t, int32_t, int32_t, int32_t> &) [with TileShape_MNK_PV_=cute::tuple<cute::C<256>, cute::C<64>, cute::C<160>>, ClusterShape_=cute::tuple<cute::_1, cute::_1, cute::_1>, Element_=cutlass::half_t, ArchTag_=cutlass::arch::Sm90, NumEpilogueThreads_=128, Varlen_=false, PackGQA_=false, Split_=false, FP8PermuteCol=false]" at line 597 of /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/flash_fwd_kernel_sm90.h
+            instantiation of "void flash::FlashAttnFwdSm90<CollectiveMainloop_, CollectiveEpilogue_, TileScheduler_>::operator()(const flash::FlashAttnFwdSm90<CollectiveMainloop_, CollectiveEpilogue_, TileScheduler_>::Params &, char *) [with CollectiveMainloop_=flash::CollectiveMainloopFwdSm90<<unnamed>::TConfig{256, 160, 3, 56U, 256U, 7, 0, 1, 0, 0}, 3, cute::tuple<cute::_1, cute::_1, cute::_1>, cute::tuple<cute::C<256>, cute::C<160>, cute::C<64>>, 64, cutlass::half_t, float, cutlass::arch::Sm90, false, false, false, false, false, false, false, true, true, false, false, false>, CollectiveEpilogue_=flash::CollectiveEpilogueFwd<cute::tuple<cute::C<256>, cute::C<64>, cute::C<160>>, cute::tuple<cute::_1, cute::_1, cute::_1>, cutlass::half_t, cutlass::arch::Sm90, 128, false, false, false, false>, TileScheduler_=flash::StaticPersistentTileScheduler<false>]" at line 41 of /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/utils.h
+            instantiation of "void flash::enable_sm90_or_later<Kernel>::operator()(Args &&...) [with Kernel=flash::FlashAttnFwdSm90<flash::CollectiveMainloopFwdSm90<<unnamed>::TConfig{256, 160, 3, 56U, 256U, 7, 0, 1, 0, 0}, 3, cute::tuple<cute::_1, cute::_1, cute::_1>, cute::tuple<cute::C<256>, cute::C<160>, cute::C<64>>, 64, cutlass::half_t, float, cutlass::arch::Sm90, false, false, false, false, false, false, false, true, true, false, false, false>, flash::CollectiveEpilogueFwd<cute::tuple<cute::C<256>, cute::C<64>, cute::C<160>>, cute::tuple<cute::_1, cute::_1, cute::_1>, cutlass::half_t, cutlass::arch::Sm90, 128, false, false, false, false>, flash::StaticPersistentTileScheduler<false>>, Args=<const flash::FlashAttnFwdSm90<flash::CollectiveMainloopFwdSm90<<unnamed>::TConfig{256, 160, 3, 56U, 256U, 7, 0, 1, 0, 0}, 3, cute::tuple<cute::_1, cute::_1, cute::_1>, cute::tuple<cute::C<256>, cute::C<160>, cute::C<64>>, 64, cutlass::half_t, float, cutlass::arch::Sm90, false, false, false, false, false, false, false, true, true, false, false, false>, flash::CollectiveEpilogueFwd<cute::tuple<cute::C<256>, cute::C<64>, cute::C<160>>, cute::tuple<cute::_1, cute::_1, cute::_1>, cutlass::half_t, cutlass::arch::Sm90, 128, false, false, false, false>, flash::StaticPersistentTileScheduler<false>>::Params &, char (&)[]>]" at line 122 of /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cutlass/include/cutlass/device_kernel.h
+            instantiation of "void cutlass::device_kernel<Operator>(Operator::Params) [with Operator=flash::enable_sm90_or_later<flash::FlashAttnFwdSm90<flash::CollectiveMainloopFwdSm90<<unnamed>::TConfig{256, 160, 3, 56U, 256U, 7, 0, 1, 0, 0}, 3, cute::tuple<cute::_1, cute::_1, cute::_1>, cute::tuple<cute::C<256>, cute::C<160>, cute::C<64>>, 64, cutlass::half_t, float, cutlass::arch::Sm90, false, false, false, false, false, false, false, true, true, false, false, false>, flash::CollectiveEpilogueFwd<cute::tuple<cute::C<256>, cute::C<64>, cute::C<160>>, cute::tuple<cute::_1, cute::_1, cute::_1>, cutlass::half_t, cutlass::arch::Sm90, 128, false, false, false, false>, flash::StaticPersistentTileScheduler<false>>>]" at line 544 of /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/flash_fwd_launch_template.h
+            instantiation of "void run_flash_fwd_custom<Arch,Config,kHeadDim,kHeadDimV,ClusterM,Element,ElementOut,Is_causal,Is_local,Has_softcap,Varlen,PagedKVNonTMA,AppendKV,HasQv,PackGQA,Split,V_colmajor>(Flash_fwd_params &, cudaStream_t) [with Arch=90, Config=<unnamed>::TConfig{256, 160, 3, 56U, 256U, 7, 0, 1, 0, 0}, kHeadDim=64, kHeadDimV=64, ClusterM=1, Element=cutlass::half_t, ElementOut=cutlass::half_t, Is_causal=false, Is_local=false, Has_softcap=false, Varlen=false, PagedKVNonTMA=false, AppendKV=false, HasQv=false, PackGQA=false, Split=false, V_colmajor=false]" at line 573 of /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/flash_fwd_launch_template.h
+            instantiation of "void run_mha_fwd_custom_fixed_<Arch,Config,T,kHeadDim,kHeadDimV,IsCausal>(Flash_fwd_params &, cudaStream_t) [with Arch=90, Config=<unnamed>::TConfig{256, 160, 3, 56U, 256U, 7, 0, 1, 0, 0}, T=cutlass::half_t, kHeadDim=64, kHeadDimV=64, IsCausal=false]" at line 797 of /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cxx-tests/custom_api/custom_api.cuh
+            instantiation of "std::vector<at::Tensor, std::allocator<at::Tensor>> custom_mha_fwd_template_core<Config,Dtype,HeadDim,HeadDimV,IsCausal>(at::Tensor &, const at::Tensor &, const at::Tensor &, std::optional<at::Tensor> &, float, int, int, float, int, std::optional<__nv_bool>, int) [with Config=<unnamed>::TConfig{256, 160, 3, 56U, 256U, 7, 0, 1, 0, 0}, Dtype=cutlass::half_t, HeadDim=64, HeadDimV=64, IsCausal=false]" at line 860 of /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cxx-tests/custom_api/custom_api.cuh
+            instantiation of "std::vector<at::Tensor, std::allocator<at::Tensor>> custom_mha_fwd_noncausal<Config,Dtype,HeadDim,HeadDimV>(at::Tensor &, const at::Tensor &, const at::Tensor &, std::optional<at::Tensor> &, float, int, int, int, float, std::optional<__nv_bool>, int) [with Config=<unnamed>::TConfig{256, 160, 3, 56U, 256U, 7, 0, 1, 0, 0}, Dtype=cutlass::half_t, HeadDim=64, HeadDimV=64]" at line 113 of /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cxx-tests/tune/src/test_b1_h16_s30720_d64_fp16_noncausal/cuda_source/bm256_bn160_st3_prd56_cra256_p7_q0_nc1_sb0_rb0.cu
+            instantiation of "void <unnamed>::benchmark<Element,InputType,IsCausal>(const char *, const <unnamed>::RunOptions &) [with Element=cutlass::half_t, InputType=c10::ScalarType::Half, IsCausal=false]" at line 223 of /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cxx-tests/tune/src/test_b1_h16_s30720_d64_fp16_noncausal/cuda_source/bm256_bn160_st3_prd56_cra256_p7_q0_nc1_sb0_rb0.cu
+
+1 error detected in the compilation of "/home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cxx-tests/tune/src/test_b1_h16_s30720_d64_fp16_noncausal/cuda_source/bm256_bn160_st3_prd56_cra256_p7_q0_nc1_sb0_rb0.cu".
+gmake[3]: *** [CMakeFiles/bm256_bn160_st3_prd56_cra256_p7_q0_nc1_sb0_rb0.dir/build.make:80: CMakeFiles/bm256_bn160_st3_prd56_cra256_p7_q0_nc1_sb0_rb0.dir/home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cxx-tests/tune/src/test_b1_h16_s30720_d64_fp16_noncausal/cuda_source/bm256_bn160_st3_prd56_cra256_p7_q0_nc1_sb0_rb0.cu.o] Error 1
+gmake[2]: *** [CMakeFiles/Makefile2:343: CMakeFiles/bm256_bn160_st3_prd56_cra256_p7_q0_nc1_sb0_rb0.dir/all] Error 2
+gmake[1]: *** [CMakeFiles/Makefile2:350: CMakeFiles/bm256_bn160_st3_prd56_cra256_p7_q0_nc1_sb0_rb0.dir/rule] Error 2
+gmake: *** [Makefile:189: bm256_bn160_st3_prd56_cra256_p7_q0_nc1_sb0_rb0] Error 2
+[3/32] bm192_bn192_st1_prd56_cra256_p5_q1_nc1_sb0_rb0: compile failed (35.1s)
+[ 75%] Built target fa3_prepare_scheduler
+[400%] Building CUDA object CMakeFiles/bm192_bn192_st1_prd56_cra256_p5_q1_nc1_sb0_rb0.dir/home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cxx-tests/tune/src/test_b1_h16_s30720_d64_fp16_noncausal/cuda_source/bm192_bn192_st1_prd56_cra256_p5_q1_nc1_sb0_rb0.cu.o
+/home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/epilogue_fwd.hpp(451): error: static assertion failed
+          static_assert(kBlockM <= NumEpilogueThreads);
+          ^
+          detected during:
+            instantiation of "void flash::CollectiveEpilogueFwd<TileShape_MNK_PV_, ClusterShape_, Element_, ArchTag_, NumEpilogueThreads_, Varlen_, PackGQA_, Split_, FP8PermuteCol>::store_zero(const flash::CollectiveEpilogueFwd<TileShape_MNK_PV_, ClusterShape_, Element_, ArchTag_, NumEpilogueThreads_, Varlen_, PackGQA_, Split_, FP8PermuteCol>::Params &, int, const cute::tuple<int32_t, int32_t, int32_t, int32_t> &) [with TileShape_MNK_PV_=cute::tuple<cute::C<192>, cute::C<64>, cute::C<192>>, ClusterShape_=cute::tuple<cute::_1, cute::_1, cute::_1>, Element_=cutlass::half_t, ArchTag_=cutlass::arch::Sm90, NumEpilogueThreads_=128, Varlen_=false, PackGQA_=false, Split_=false, FP8PermuteCol=false]" at line 597 of /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/flash_fwd_kernel_sm90.h
+            instantiation of "void flash::FlashAttnFwdSm90<CollectiveMainloop_, CollectiveEpilogue_, TileScheduler_>::operator()(const flash::FlashAttnFwdSm90<CollectiveMainloop_, CollectiveEpilogue_, TileScheduler_>::Params &, char *) [with CollectiveMainloop_=flash::CollectiveMainloopFwdSm90<<unnamed>::TConfig{192, 192, 1, 56U, 256U, 5, 1, 1, 0, 0}, 1, cute::tuple<cute::_1, cute::_1, cute::_1>, cute::tuple<cute::C<192>, cute::C<192>, cute::C<64>>, 64, cutlass::half_t, float, cutlass::arch::Sm90, false, false, false, false, false, false, false, true, true, false, false, false>, CollectiveEpilogue_=flash::CollectiveEpilogueFwd<cute::tuple<cute::C<192>, cute::C<64>, cute::C<192>>, cute::tuple<cute::_1, cute::_1, cute::_1>, cutlass::half_t, cutlass::arch::Sm90, 128, false, false, false, false>, TileScheduler_=flash::StaticPersistentTileScheduler<false>]" at line 41 of /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/utils.h
+            instantiation of "void flash::enable_sm90_or_later<Kernel>::operator()(Args &&...) [with Kernel=flash::FlashAttnFwdSm90<flash::CollectiveMainloopFwdSm90<<unnamed>::TConfig{192, 192, 1, 56U, 256U, 5, 1, 1, 0, 0}, 1, cute::tuple<cute::_1, cute::_1, cute::_1>, cute::tuple<cute::C<192>, cute::C<192>, cute::C<64>>, 64, cutlass::half_t, float, cutlass::arch::Sm90, false, false, false, false, false, false, false, true, true, false, false, false>, flash::CollectiveEpilogueFwd<cute::tuple<cute::C<192>, cute::C<64>, cute::C<192>>, cute::tuple<cute::_1, cute::_1, cute::_1>, cutlass::half_t, cutlass::arch::Sm90, 128, false, false, false, false>, flash::StaticPersistentTileScheduler<false>>, Args=<const flash::FlashAttnFwdSm90<flash::CollectiveMainloopFwdSm90<<unnamed>::TConfig{192, 192, 1, 56U, 256U, 5, 1, 1, 0, 0}, 1, cute::tuple<cute::_1, cute::_1, cute::_1>, cute::tuple<cute::C<192>, cute::C<192>, cute::C<64>>, 64, cutlass::half_t, float, cutlass::arch::Sm90, false, false, false, false, false, false, false, true, true, false, false, false>, flash::CollectiveEpilogueFwd<cute::tuple<cute::C<192>, cute::C<64>, cute::C<192>>, cute::tuple<cute::_1, cute::_1, cute::_1>, cutlass::half_t, cutlass::arch::Sm90, 128, false, false, false, false>, flash::StaticPersistentTileScheduler<false>>::Params &, char (&)[]>]" at line 122 of /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cutlass/include/cutlass/device_kernel.h
+            instantiation of "void cutlass::device_kernel<Operator>(Operator::Params) [with Operator=flash::enable_sm90_or_later<flash::FlashAttnFwdSm90<flash::CollectiveMainloopFwdSm90<<unnamed>::TConfig{192, 192, 1, 56U, 256U, 5, 1, 1, 0, 0}, 1, cute::tuple<cute::_1, cute::_1, cute::_1>, cute::tuple<cute::C<192>, cute::C<192>, cute::C<64>>, 64, cutlass::half_t, float, cutlass::arch::Sm90, false, false, false, false, false, false, false, true, true, false, false, false>, flash::CollectiveEpilogueFwd<cute::tuple<cute::C<192>, cute::C<64>, cute::C<192>>, cute::tuple<cute::_1, cute::_1, cute::_1>, cutlass::half_t, cutlass::arch::Sm90, 128, false, false, false, false>, flash::StaticPersistentTileScheduler<false>>>]" at line 544 of /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/flash_fwd_launch_template.h
+            instantiation of "void run_flash_fwd_custom<Arch,Config,kHeadDim,kHeadDimV,ClusterM,Element,ElementOut,Is_causal,Is_local,Has_softcap,Varlen,PagedKVNonTMA,AppendKV,HasQv,PackGQA,Split,V_colmajor>(Flash_fwd_params &, cudaStream_t) [with Arch=90, Config=<unnamed>::TConfig{192, 192, 1, 56U, 256U, 5, 1, 1, 0, 0}, kHeadDim=64, kHeadDimV=64, ClusterM=1, Element=cutlass::half_t, ElementOut=cutlass::half_t, Is_causal=false, Is_local=false, Has_softcap=false, Varlen=false, PagedKVNonTMA=false, AppendKV=false, HasQv=false, PackGQA=false, Split=false, V_colmajor=false]" at line 573 of /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/flash_fwd_launch_template.h
+            instantiation of "void run_mha_fwd_custom_fixed_<Arch,Config,T,kHeadDim,kHeadDimV,IsCausal>(Flash_fwd_params &, cudaStream_t) [with Arch=90, Config=<unnamed>::TConfig{192, 192, 1, 56U, 256U, 5, 1, 1, 0, 0}, T=cutlass::half_t, kHeadDim=64, kHeadDimV=64, IsCausal=false]" at line 797 of /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cxx-tests/custom_api/custom_api.cuh
+            instantiation of "std::vector<at::Tensor, std::allocator<at::Tensor>> custom_mha_fwd_template_core<Config,Dtype,HeadDim,HeadDimV,IsCausal>(at::Tensor &, const at::Tensor &, const at::Tensor &, std::optional<at::Tensor> &, float, int, int, float, int, std::optional<__nv_bool>, int) [with Config=<unnamed>::TConfig{192, 192, 1, 56U, 256U, 5, 1, 1, 0, 0}, Dtype=cutlass::half_t, HeadDim=64, HeadDimV=64, IsCausal=false]" at line 860 of /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cxx-tests/custom_api/custom_api.cuh
+            instantiation of "std::vector<at::Tensor, std::allocator<at::Tensor>> custom_mha_fwd_noncausal<Config,Dtype,HeadDim,HeadDimV>(at::Tensor &, const at::Tensor &, const at::Tensor &, std::optional<at::Tensor> &, float, int, int, int, float, std::optional<__nv_bool>, int) [with Config=<unnamed>::TConfig{192, 192, 1, 56U, 256U, 5, 1, 1, 0, 0}, Dtype=cutlass::half_t, HeadDim=64, HeadDimV=64]" at line 113 of /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cxx-tests/tune/src/test_b1_h16_s30720_d64_fp16_noncausal/cuda_source/bm192_bn192_st1_prd56_cra256_p5_q1_nc1_sb0_rb0.cu
+            instantiation of "void <unnamed>::benchmark<Element,InputType,IsCausal>(const char *, const <unnamed>::RunOptions &) [with Element=cutlass::half_t, InputType=c10::ScalarType::Half, IsCausal=false]" at line 223 of /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cxx-tests/tune/src/test_b1_h16_s30720_d64_fp16_noncausal/cuda_source/bm192_bn192_st1_prd56_cra256_p5_q1_nc1_sb0_rb0.cu
+
+1 error detected in the compilation of "/home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cxx-tests/tune/src/test_b1_h16_s30720_d64_fp16_noncausal/cuda_source/bm192_bn192_st1_prd56_cra256_p5_q1_nc1_sb0_rb0.cu".
+gmake[3]: *** [CMakeFiles/bm192_bn192_st1_prd56_cra256_p5_q1_nc1_sb0_rb0.dir/build.make:80: CMakeFiles/bm192_bn192_st1_prd56_cra256_p5_q1_nc1_sb0_rb0.dir/home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cxx-tests/tune/src/test_b1_h16_s30720_d64_fp16_noncausal/cuda_source/bm192_bn192_st1_prd56_cra256_p5_q1_nc1_sb0_rb0.cu.o] Error 1
+gmake[2]: *** [CMakeFiles/Makefile2:567: CMakeFiles/bm192_bn192_st1_prd56_cra256_p5_q1_nc1_sb0_rb0.dir/all] Error 2
+gmake[1]: *** [CMakeFiles/Makefile2:574: CMakeFiles/bm192_bn192_st1_prd56_cra256_p5_q1_nc1_sb0_rb0.dir/rule] Error 2
+gmake: *** [Makefile:280: bm192_bn192_st1_prd56_cra256_p5_q1_nc1_sb0_rb0] Error 2
+[4/32] bm384_bn192_st3_prd24_cra240_p8_q0_nc2_sb0_rb0: compile failed (35.5s)
+[ 50%] Built target fa3_prepare_scheduler
+[ 75%] Building CUDA object CMakeFiles/bm384_bn192_st3_prd24_cra240_p8_q0_nc2_sb0_rb0.dir/home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cxx-tests/tune/src/test_b1_h16_s30720_d64_fp16_noncausal/cuda_source/bm384_bn192_st3_prd24_cra240_p8_q0_nc2_sb0_rb0.cu.o
+/home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/epilogue_fwd.hpp(451): error: static assertion failed
+          static_assert(kBlockM <= NumEpilogueThreads);
+          ^
+          detected during:
+            instantiation of "void flash::CollectiveEpilogueFwd<TileShape_MNK_PV_, ClusterShape_, Element_, ArchTag_, NumEpilogueThreads_, Varlen_, PackGQA_, Split_, FP8PermuteCol>::store_zero(const flash::CollectiveEpilogueFwd<TileShape_MNK_PV_, ClusterShape_, Element_, ArchTag_, NumEpilogueThreads_, Varlen_, PackGQA_, Split_, FP8PermuteCol>::Params &, int, const cute::tuple<int32_t, int32_t, int32_t, int32_t> &) [with TileShape_MNK_PV_=cute::tuple<cute::C<384>, cute::C<64>, cute::C<192>>, ClusterShape_=cute::tuple<cute::_1, cute::_1, cute::_1>, Element_=cutlass::half_t, ArchTag_=cutlass::arch::Sm90, NumEpilogueThreads_=256, Varlen_=false, PackGQA_=false, Split_=false, FP8PermuteCol=false]" at line 597 of /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/flash_fwd_kernel_sm90.h
+            instantiation of "void flash::FlashAttnFwdSm90<CollectiveMainloop_, CollectiveEpilogue_, TileScheduler_>::operator()(const flash::FlashAttnFwdSm90<CollectiveMainloop_, CollectiveEpilogue_, TileScheduler_>::Params &, char *) [with CollectiveMainloop_=flash::CollectiveMainloopFwdSm90<<unnamed>::TConfig{384, 192, 3, 24U, 240U, 8, 0, 2, 0, 0}, 3, cute::tuple<cute::_1, cute::_1, cute::_1>, cute::tuple<cute::C<384>, cute::C<192>, cute::C<64>>, 64, cutlass::half_t, float, cutlass::arch::Sm90, false, false, false, false, false, false, false, true, true, false, false, false>, CollectiveEpilogue_=flash::CollectiveEpilogueFwd<cute::tuple<cute::C<384>, cute::C<64>, cute::C<192>>, cute::tuple<cute::_1, cute::_1, cute::_1>, cutlass::half_t, cutlass::arch::Sm90, 256, false, false, false, false>, TileScheduler_=flash::StaticPersistentTileScheduler<false>]" at line 41 of /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/utils.h
+            instantiation of "void flash::enable_sm90_or_later<Kernel>::operator()(Args &&...) [with Kernel=flash::FlashAttnFwdSm90<flash::CollectiveMainloopFwdSm90<<unnamed>::TConfig{384, 192, 3, 24U, 240U, 8, 0, 2, 0, 0}, 3, cute::tuple<cute::_1, cute::_1, cute::_1>, cute::tuple<cute::C<384>, cute::C<192>, cute::C<64>>, 64, cutlass::half_t, float, cutlass::arch::Sm90, false, false, false, false, false, false, false, true, true, false, false, false>, flash::CollectiveEpilogueFwd<cute::tuple<cute::C<384>, cute::C<64>, cute::C<192>>, cute::tuple<cute::_1, cute::_1, cute::_1>, cutlass::half_t, cutlass::arch::Sm90, 256, false, false, false, false>, flash::StaticPersistentTileScheduler<false>>, Args=<const flash::FlashAttnFwdSm90<flash::CollectiveMainloopFwdSm90<<unnamed>::TConfig{384, 192, 3, 24U, 240U, 8, 0, 2, 0, 0}, 3, cute::tuple<cute::_1, cute::_1, cute::_1>, cute::tuple<cute::C<384>, cute::C<192>, cute::C<64>>, 64, cutlass::half_t, float, cutlass::arch::Sm90, false, false, false, false, false, false, false, true, true, false, false, false>, flash::CollectiveEpilogueFwd<cute::tuple<cute::C<384>, cute::C<64>, cute::C<192>>, cute::tuple<cute::_1, cute::_1, cute::_1>, cutlass::half_t, cutlass::arch::Sm90, 256, false, false, false, false>, flash::StaticPersistentTileScheduler<false>>::Params &, char (&)[]>]" at line 122 of /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cutlass/include/cutlass/device_kernel.h
+            instantiation of "void cutlass::device_kernel<Operator>(Operator::Params) [with Operator=flash::enable_sm90_or_later<flash::FlashAttnFwdSm90<flash::CollectiveMainloopFwdSm90<<unnamed>::TConfig{384, 192, 3, 24U, 240U, 8, 0, 2, 0, 0}, 3, cute::tuple<cute::_1, cute::_1, cute::_1>, cute::tuple<cute::C<384>, cute::C<192>, cute::C<64>>, 64, cutlass::half_t, float, cutlass::arch::Sm90, false, false, false, false, false, false, false, true, true, false, false, false>, flash::CollectiveEpilogueFwd<cute::tuple<cute::C<384>, cute::C<64>, cute::C<192>>, cute::tuple<cute::_1, cute::_1, cute::_1>, cutlass::half_t, cutlass::arch::Sm90, 256, false, false, false, false>, flash::StaticPersistentTileScheduler<false>>>]" at line 544 of /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/flash_fwd_launch_template.h
+            instantiation of "void run_flash_fwd_custom<Arch,Config,kHeadDim,kHeadDimV,ClusterM,Element,ElementOut,Is_causal,Is_local,Has_softcap,Varlen,PagedKVNonTMA,AppendKV,HasQv,PackGQA,Split,V_colmajor>(Flash_fwd_params &, cudaStream_t) [with Arch=90, Config=<unnamed>::TConfig{384, 192, 3, 24U, 240U, 8, 0, 2, 0, 0}, kHeadDim=64, kHeadDimV=64, ClusterM=1, Element=cutlass::half_t, ElementOut=cutlass::half_t, Is_causal=false, Is_local=false, Has_softcap=false, Varlen=false, PagedKVNonTMA=false, AppendKV=false, HasQv=false, PackGQA=false, Split=false, V_colmajor=false]" at line 573 of /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/flash_fwd_launch_template.h
+            instantiation of "void run_mha_fwd_custom_fixed_<Arch,Config,T,kHeadDim,kHeadDimV,IsCausal>(Flash_fwd_params &, cudaStream_t) [with Arch=90, Config=<unnamed>::TConfig{384, 192, 3, 24U, 240U, 8, 0, 2, 0, 0}, T=cutlass::half_t, kHeadDim=64, kHeadDimV=64, IsCausal=false]" at line 797 of /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cxx-tests/custom_api/custom_api.cuh
+            instantiation of "std::vector<at::Tensor, std::allocator<at::Tensor>> custom_mha_fwd_template_core<Config,Dtype,HeadDim,HeadDimV,IsCausal>(at::Tensor &, const at::Tensor &, const at::Tensor &, std::optional<at::Tensor> &, float, int, int, float, int, std::optional<__nv_bool>, int) [with Config=<unnamed>::TConfig{384, 192, 3, 24U, 240U, 8, 0, 2, 0, 0}, Dtype=cutlass::half_t, HeadDim=64, HeadDimV=64, IsCausal=false]" at line 860 of /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cxx-tests/custom_api/custom_api.cuh
+            instantiation of "std::vector<at::Tensor, std::allocator<at::Tensor>> custom_mha_fwd_noncausal<Config,Dtype,HeadDim,HeadDimV>(at::Tensor &, const at::Tensor &, const at::Tensor &, std::optional<at::Tensor> &, float, int, int, int, float, std::optional<__nv_bool>, int) [with Config=<unnamed>::TConfig{384, 192, 3, 24U, 240U, 8, 0, 2, 0, 0}, Dtype=cutlass::half_t, HeadDim=64, HeadDimV=64]" at line 113 of /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cxx-tests/tune/src/test_b1_h16_s30720_d64_fp16_noncausal/cuda_source/bm384_bn192_st3_prd24_cra240_p8_q0_nc2_sb0_rb0.cu
+            instantiation of "void <unnamed>::benchmark<Element,InputType,IsCausal>(const char *, const <unnamed>::RunOptions &) [with Element=cutlass::half_t, InputType=c10::ScalarType::Half, IsCausal=false]" at line 223 of /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cxx-tests/tune/src/test_b1_h16_s30720_d64_fp16_noncausal/cuda_source/bm384_bn192_st3_prd24_cra240_p8_q0_nc2_sb0_rb0.cu
+
+1 error detected in the compilation of "/home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cxx-tests/tune/src/test_b1_h16_s30720_d64_fp16_noncausal/cuda_source/bm384_bn192_st3_prd24_cra240_p8_q0_nc2_sb0_rb0.cu".
+gmake[3]: *** [CMakeFiles/bm384_bn192_st3_prd24_cra240_p8_q0_nc2_sb0_rb0.dir/build.make:80: CMakeFiles/bm384_bn192_st3_prd24_cra240_p8_q0_nc2_sb0_rb0.dir/home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cxx-tests/tune/src/test_b1_h16_s30720_d64_fp16_noncausal/cuda_source/bm384_bn192_st3_prd24_cra240_p8_q0_nc2_sb0_rb0.cu.o] Error 1
+gmake[2]: *** [CMakeFiles/Makefile2:535: CMakeFiles/bm384_bn192_st3_prd24_cra240_p8_q0_nc2_sb0_rb0.dir/all] Error 2
+gmake[1]: *** [CMakeFiles/Makefile2:542: CMakeFiles/bm384_bn192_st3_prd24_cra240_p8_q0_nc2_sb0_rb0.dir/rule] Error 2
+gmake: *** [Makefile:267: bm384_bn192_st3_prd24_cra240_p8_q0_nc2_sb0_rb0] Error 2
+[5/32] bm64_bn208_st3_prd56_cra256_p5_q0_nc1_sb0_rb0: compiled (56.8s)
+[6/32] bm64_bn112_st3_prd56_cra256_p1_q2_nc1_sb0_rb0: compiled (57.6s)
+[7/32] bm64_bn128_st3_prd56_cra256_p0_q1_nc1_sb0_rb0: compiled (57.7s)
+[8/32] bm128_bn176_st1_prd24_cra240_p9_q2_nc2_sb0_rb0: compiled (58.9s)
+[9/32] bm128_bn112_st3_prd24_cra240_p7_q2_nc2_sb0_rb0: compiled (59.1s)
+[10/32] bm128_bn208_st3_prd24_cra240_p12_q4_nc2_sb0_rb0: compiled (61.0s)
+[11/32] bm128_bn224_st3_prd56_cra256_p8_q0_nc1_sb0_rb0: compiled (61.2s)
+[12/32] bm256_bn224_st2_prd24_cra240_p10_q0_nc2_sb0_rb0: compiled (61.7s)
+[13/32] bm128_bn240_st1_prd56_cra256_p8_q2_nc1_sb0_rb0: compiled (63.4s)
+[14/32] bm256_bn192_st2_prd24_cra240_p5_q2_nc2_sb0_rb0: compiled (65.3s)
+[15/32] bm128_bn224_st2_prd56_cra256_p13_q3_nc1_sb0_rb0: compiled (66.1s)
+[16/32] bm256_bn240_st1_prd24_cra240_p14_q4_nc2_sb0_rb0: performance warning (66.1s)
+  ptxas info    : (C7512) Potential Performance Loss: wgmma.mma_async instructions are serialized due to insufficient register resources for the function '_ZN7cutlass13device_kernelIN5flash20enable_sm90_or_laterINS1_16FlashAttnFwdSm90INS1_25CollectiveMainloopFwdSm90IXtlN83_GLOBAL__N__68e4aeab_50_bm256_bn240_st1_prd24_cra240_p14_q4_nc2_sb0_rb0_cu_79fa05bf7TConfigELi256ELi240ELi1ELj24ELj240ELi14ELi4ELi2ELi0ELi0EEELi1EN4cute5tupleIJNS7_1CILi1EEESA_SA_EEENS8_IJNS9_ILi256EEENS9_ILi240EEENS9_ILi64EEEEEELi64ENS_6half_tEfNS_4arch4Sm90ELb0ELb0ELb0ELb0ELb0ELb0ELb0ELb1ELb1ELb0ELb0ELb0EEENS1_21CollectiveEpilogueFwdINS8_IJSC_SE_SD_EEESB_SG_SI_Li256ELb0ELb0ELb0ELb0EEENS1_29StaticPersistentTileSchedulerILb0EEEEEEEEEvNT_6ParamsE'
+[17/32] bm384_bn144_st1_prd24_cra240_p9_q3_nc2_sb0_rb0: compile failed (36.4s)
+[ 50%] Built target fa3_prepare_scheduler
+[ 75%] Building CUDA object CMakeFiles/bm384_bn144_st1_prd24_cra240_p9_q3_nc2_sb0_rb0.dir/home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cxx-tests/tune/src/test_b1_h16_s30720_d64_fp16_noncausal/cuda_source/bm384_bn144_st1_prd24_cra240_p9_q3_nc2_sb0_rb0.cu.o
+/home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/epilogue_fwd.hpp(451): error: static assertion failed
+          static_assert(kBlockM <= NumEpilogueThreads);
+          ^
+          detected during:
+            instantiation of "void flash::CollectiveEpilogueFwd<TileShape_MNK_PV_, ClusterShape_, Element_, ArchTag_, NumEpilogueThreads_, Varlen_, PackGQA_, Split_, FP8PermuteCol>::store_zero(const flash::CollectiveEpilogueFwd<TileShape_MNK_PV_, ClusterShape_, Element_, ArchTag_, NumEpilogueThreads_, Varlen_, PackGQA_, Split_, FP8PermuteCol>::Params &, int, const cute::tuple<int32_t, int32_t, int32_t, int32_t> &) [with TileShape_MNK_PV_=cute::tuple<cute::C<384>, cute::C<64>, cute::C<144>>, ClusterShape_=cute::tuple<cute::_1, cute::_1, cute::_1>, Element_=cutlass::half_t, ArchTag_=cutlass::arch::Sm90, NumEpilogueThreads_=256, Varlen_=false, PackGQA_=false, Split_=false, FP8PermuteCol=false]" at line 597 of /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/flash_fwd_kernel_sm90.h
+            instantiation of "void flash::FlashAttnFwdSm90<CollectiveMainloop_, CollectiveEpilogue_, TileScheduler_>::operator()(const flash::FlashAttnFwdSm90<CollectiveMainloop_, CollectiveEpilogue_, TileScheduler_>::Params &, char *) [with CollectiveMainloop_=flash::CollectiveMainloopFwdSm90<<unnamed>::TConfig{384, 144, 1, 24U, 240U, 9, 3, 2, 0, 0}, 1, cute::tuple<cute::_1, cute::_1, cute::_1>, cute::tuple<cute::C<384>, cute::C<144>, cute::C<64>>, 64, cutlass::half_t, float, cutlass::arch::Sm90, false, false, false, false, false, false, false, true, true, false, false, false>, CollectiveEpilogue_=flash::CollectiveEpilogueFwd<cute::tuple<cute::C<384>, cute::C<64>, cute::C<144>>, cute::tuple<cute::_1, cute::_1, cute::_1>, cutlass::half_t, cutlass::arch::Sm90, 256, false, false, false, false>, TileScheduler_=flash::StaticPersistentTileScheduler<false>]" at line 41 of /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/utils.h
+            instantiation of "void flash::enable_sm90_or_later<Kernel>::operator()(Args &&...) [with Kernel=flash::FlashAttnFwdSm90<flash::CollectiveMainloopFwdSm90<<unnamed>::TConfig{384, 144, 1, 24U, 240U, 9, 3, 2, 0, 0}, 1, cute::tuple<cute::_1, cute::_1, cute::_1>, cute::tuple<cute::C<384>, cute::C<144>, cute::C<64>>, 64, cutlass::half_t, float, cutlass::arch::Sm90, false, false, false, false, false, false, false, true, true, false, false, false>, flash::CollectiveEpilogueFwd<cute::tuple<cute::C<384>, cute::C<64>, cute::C<144>>, cute::tuple<cute::_1, cute::_1, cute::_1>, cutlass::half_t, cutlass::arch::Sm90, 256, false, false, false, false>, flash::StaticPersistentTileScheduler<false>>, Args=<const flash::FlashAttnFwdSm90<flash::CollectiveMainloopFwdSm90<<unnamed>::TConfig{384, 144, 1, 24U, 240U, 9, 3, 2, 0, 0}, 1, cute::tuple<cute::_1, cute::_1, cute::_1>, cute::tuple<cute::C<384>, cute::C<144>, cute::C<64>>, 64, cutlass::half_t, float, cutlass::arch::Sm90, false, false, false, false, false, false, false, true, true, false, false, false>, flash::CollectiveEpilogueFwd<cute::tuple<cute::C<384>, cute::C<64>, cute::C<144>>, cute::tuple<cute::_1, cute::_1, cute::_1>, cutlass::half_t, cutlass::arch::Sm90, 256, false, false, false, false>, flash::StaticPersistentTileScheduler<false>>::Params &, char (&)[]>]" at line 122 of /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cutlass/include/cutlass/device_kernel.h
+            instantiation of "void cutlass::device_kernel<Operator>(Operator::Params) [with Operator=flash::enable_sm90_or_later<flash::FlashAttnFwdSm90<flash::CollectiveMainloopFwdSm90<<unnamed>::TConfig{384, 144, 1, 24U, 240U, 9, 3, 2, 0, 0}, 1, cute::tuple<cute::_1, cute::_1, cute::_1>, cute::tuple<cute::C<384>, cute::C<144>, cute::C<64>>, 64, cutlass::half_t, float, cutlass::arch::Sm90, false, false, false, false, false, false, false, true, true, false, false, false>, flash::CollectiveEpilogueFwd<cute::tuple<cute::C<384>, cute::C<64>, cute::C<144>>, cute::tuple<cute::_1, cute::_1, cute::_1>, cutlass::half_t, cutlass::arch::Sm90, 256, false, false, false, false>, flash::StaticPersistentTileScheduler<false>>>]" at line 544 of /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/flash_fwd_launch_template.h
+            instantiation of "void run_flash_fwd_custom<Arch,Config,kHeadDim,kHeadDimV,ClusterM,Element,ElementOut,Is_causal,Is_local,Has_softcap,Varlen,PagedKVNonTMA,AppendKV,HasQv,PackGQA,Split,V_colmajor>(Flash_fwd_params &, cudaStream_t) [with Arch=90, Config=<unnamed>::TConfig{384, 144, 1, 24U, 240U, 9, 3, 2, 0, 0}, kHeadDim=64, kHeadDimV=64, ClusterM=1, Element=cutlass::half_t, ElementOut=cutlass::half_t, Is_causal=false, Is_local=false, Has_softcap=false, Varlen=false, PagedKVNonTMA=false, AppendKV=false, HasQv=false, PackGQA=false, Split=false, V_colmajor=false]" at line 573 of /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/flash_fwd_launch_template.h
+            instantiation of "void run_mha_fwd_custom_fixed_<Arch,Config,T,kHeadDim,kHeadDimV,IsCausal>(Flash_fwd_params &, cudaStream_t) [with Arch=90, Config=<unnamed>::TConfig{384, 144, 1, 24U, 240U, 9, 3, 2, 0, 0}, T=cutlass::half_t, kHeadDim=64, kHeadDimV=64, IsCausal=false]" at line 797 of /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cxx-tests/custom_api/custom_api.cuh
+            instantiation of "std::vector<at::Tensor, std::allocator<at::Tensor>> custom_mha_fwd_template_core<Config,Dtype,HeadDim,HeadDimV,IsCausal>(at::Tensor &, const at::Tensor &, const at::Tensor &, std::optional<at::Tensor> &, float, int, int, float, int, std::optional<__nv_bool>, int) [with Config=<unnamed>::TConfig{384, 144, 1, 24U, 240U, 9, 3, 2, 0, 0}, Dtype=cutlass::half_t, HeadDim=64, HeadDimV=64, IsCausal=false]" at line 860 of /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cxx-tests/custom_api/custom_api.cuh
+            instantiation of "std::vector<at::Tensor, std::allocator<at::Tensor>> custom_mha_fwd_noncausal<Config,Dtype,HeadDim,HeadDimV>(at::Tensor &, const at::Tensor &, const at::Tensor &, std::optional<at::Tensor> &, float, int, int, int, float, std::optional<__nv_bool>, int) [with Config=<unnamed>::TConfig{384, 144, 1, 24U, 240U, 9, 3, 2, 0, 0}, Dtype=cutlass::half_t, HeadDim=64, HeadDimV=64]" at line 113 of /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cxx-tests/tune/src/test_b1_h16_s30720_d64_fp16_noncausal/cuda_source/bm384_bn144_st1_prd24_cra240_p9_q3_nc2_sb0_rb0.cu
+            instantiation of "void <unnamed>::benchmark<Element,InputType,IsCausal>(const char *, const <unnamed>::RunOptions &) [with Element=cutlass::half_t, InputType=c10::ScalarType::Half, IsCausal=false]" at line 223 of /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cxx-tests/tune/src/test_b1_h16_s30720_d64_fp16_noncausal/cuda_source/bm384_bn144_st1_prd24_cra240_p9_q3_nc2_sb0_rb0.cu
+
+1 error detected in the compilation of "/home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cxx-tests/tune/src/test_b1_h16_s30720_d64_fp16_noncausal/cuda_source/bm384_bn144_st1_prd24_cra240_p9_q3_nc2_sb0_rb0.cu".
+gmake[3]: *** [CMakeFiles/bm384_bn144_st1_prd24_cra240_p9_q3_nc2_sb0_rb0.dir/build.make:80: CMakeFiles/bm384_bn144_st1_prd24_cra240_p9_q3_nc2_sb0_rb0.dir/home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cxx-tests/tune/src/test_b1_h16_s30720_d64_fp16_noncausal/cuda_source/bm384_bn144_st1_prd24_cra240_p9_q3_nc2_sb0_rb0.cu.o] Error 1
+gmake[2]: *** [CMakeFiles/Makefile2:759: CMakeFiles/bm384_bn144_st1_prd24_cra240_p9_q3_nc2_sb0_rb0.dir/all] Error 2
+gmake[1]: *** [CMakeFiles/Makefile2:766: CMakeFiles/bm384_bn144_st1_prd24_cra240_p9_q3_nc2_sb0_rb0.dir/rule] Error 2
+gmake: *** [Makefile:358: bm384_bn144_st1_prd24_cra240_p9_q3_nc2_sb0_rb0] Error 2
+[18/32] bm192_bn176_st3_prd56_cra256_p10_q3_nc1_sb0_rb0: compile failed (35.9s)
+[ 50%] Built target fa3_prepare_scheduler
+[ 75%] Building CUDA object CMakeFiles/bm192_bn176_st3_prd56_cra256_p10_q3_nc1_sb0_rb0.dir/home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cxx-tests/tune/src/test_b1_h16_s30720_d64_fp16_noncausal/cuda_source/bm192_bn176_st3_prd56_cra256_p10_q3_nc1_sb0_rb0.cu.o
+/home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/epilogue_fwd.hpp(451): error: static assertion failed
+          static_assert(kBlockM <= NumEpilogueThreads);
+          ^
+          detected during:
+            instantiation of "void flash::CollectiveEpilogueFwd<TileShape_MNK_PV_, ClusterShape_, Element_, ArchTag_, NumEpilogueThreads_, Varlen_, PackGQA_, Split_, FP8PermuteCol>::store_zero(const flash::CollectiveEpilogueFwd<TileShape_MNK_PV_, ClusterShape_, Element_, ArchTag_, NumEpilogueThreads_, Varlen_, PackGQA_, Split_, FP8PermuteCol>::Params &, int, const cute::tuple<int32_t, int32_t, int32_t, int32_t> &) [with TileShape_MNK_PV_=cute::tuple<cute::C<192>, cute::C<64>, cute::C<176>>, ClusterShape_=cute::tuple<cute::_1, cute::_1, cute::_1>, Element_=cutlass::half_t, ArchTag_=cutlass::arch::Sm90, NumEpilogueThreads_=128, Varlen_=false, PackGQA_=false, Split_=false, FP8PermuteCol=false]" at line 597 of /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/flash_fwd_kernel_sm90.h
+            instantiation of "void flash::FlashAttnFwdSm90<CollectiveMainloop_, CollectiveEpilogue_, TileScheduler_>::operator()(const flash::FlashAttnFwdSm90<CollectiveMainloop_, CollectiveEpilogue_, TileScheduler_>::Params &, char *) [with CollectiveMainloop_=flash::CollectiveMainloopFwdSm90<<unnamed>::TConfig{192, 176, 3, 56U, 256U, 10, 3, 1, 0, 0}, 3, cute::tuple<cute::_1, cute::_1, cute::_1>, cute::tuple<cute::C<192>, cute::C<176>, cute::C<64>>, 64, cutlass::half_t, float, cutlass::arch::Sm90, false, false, false, false, false, false, false, true, true, false, false, false>, CollectiveEpilogue_=flash::CollectiveEpilogueFwd<cute::tuple<cute::C<192>, cute::C<64>, cute::C<176>>, cute::tuple<cute::_1, cute::_1, cute::_1>, cutlass::half_t, cutlass::arch::Sm90, 128, false, false, false, false>, TileScheduler_=flash::StaticPersistentTileScheduler<false>]" at line 41 of /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/utils.h
+            instantiation of "void flash::enable_sm90_or_later<Kernel>::operator()(Args &&...) [with Kernel=flash::FlashAttnFwdSm90<flash::CollectiveMainloopFwdSm90<<unnamed>::TConfig{192, 176, 3, 56U, 256U, 10, 3, 1, 0, 0}, 3, cute::tuple<cute::_1, cute::_1, cute::_1>, cute::tuple<cute::C<192>, cute::C<176>, cute::C<64>>, 64, cutlass::half_t, float, cutlass::arch::Sm90, false, false, false, false, false, false, false, true, true, false, false, false>, flash::CollectiveEpilogueFwd<cute::tuple<cute::C<192>, cute::C<64>, cute::C<176>>, cute::tuple<cute::_1, cute::_1, cute::_1>, cutlass::half_t, cutlass::arch::Sm90, 128, false, false, false, false>, flash::StaticPersistentTileScheduler<false>>, Args=<const flash::FlashAttnFwdSm90<flash::CollectiveMainloopFwdSm90<<unnamed>::TConfig{192, 176, 3, 56U, 256U, 10, 3, 1, 0, 0}, 3, cute::tuple<cute::_1, cute::_1, cute::_1>, cute::tuple<cute::C<192>, cute::C<176>, cute::C<64>>, 64, cutlass::half_t, float, cutlass::arch::Sm90, false, false, false, false, false, false, false, true, true, false, false, false>, flash::CollectiveEpilogueFwd<cute::tuple<cute::C<192>, cute::C<64>, cute::C<176>>, cute::tuple<cute::_1, cute::_1, cute::_1>, cutlass::half_t, cutlass::arch::Sm90, 128, false, false, false, false>, flash::StaticPersistentTileScheduler<false>>::Params &, char (&)[]>]" at line 122 of /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cutlass/include/cutlass/device_kernel.h
+            instantiation of "void cutlass::device_kernel<Operator>(Operator::Params) [with Operator=flash::enable_sm90_or_later<flash::FlashAttnFwdSm90<flash::CollectiveMainloopFwdSm90<<unnamed>::TConfig{192, 176, 3, 56U, 256U, 10, 3, 1, 0, 0}, 3, cute::tuple<cute::_1, cute::_1, cute::_1>, cute::tuple<cute::C<192>, cute::C<176>, cute::C<64>>, 64, cutlass::half_t, float, cutlass::arch::Sm90, false, false, false, false, false, false, false, true, true, false, false, false>, flash::CollectiveEpilogueFwd<cute::tuple<cute::C<192>, cute::C<64>, cute::C<176>>, cute::tuple<cute::_1, cute::_1, cute::_1>, cutlass::half_t, cutlass::arch::Sm90, 128, false, false, false, false>, flash::StaticPersistentTileScheduler<false>>>]" at line 544 of /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/flash_fwd_launch_template.h
+            instantiation of "void run_flash_fwd_custom<Arch,Config,kHeadDim,kHeadDimV,ClusterM,Element,ElementOut,Is_causal,Is_local,Has_softcap,Varlen,PagedKVNonTMA,AppendKV,HasQv,PackGQA,Split,V_colmajor>(Flash_fwd_params &, cudaStream_t) [with Arch=90, Config=<unnamed>::TConfig{192, 176, 3, 56U, 256U, 10, 3, 1, 0, 0}, kHeadDim=64, kHeadDimV=64, ClusterM=1, Element=cutlass::half_t, ElementOut=cutlass::half_t, Is_causal=false, Is_local=false, Has_softcap=false, Varlen=false, PagedKVNonTMA=false, AppendKV=false, HasQv=false, PackGQA=false, Split=false, V_colmajor=false]" at line 573 of /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/flash_fwd_launch_template.h
+            instantiation of "void run_mha_fwd_custom_fixed_<Arch,Config,T,kHeadDim,kHeadDimV,IsCausal>(Flash_fwd_params &, cudaStream_t) [with Arch=90, Config=<unnamed>::TConfig{192, 176, 3, 56U, 256U, 10, 3, 1, 0, 0}, T=cutlass::half_t, kHeadDim=64, kHeadDimV=64, IsCausal=false]" at line 797 of /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cxx-tests/custom_api/custom_api.cuh
+            instantiation of "std::vector<at::Tensor, std::allocator<at::Tensor>> custom_mha_fwd_template_core<Config,Dtype,HeadDim,HeadDimV,IsCausal>(at::Tensor &, const at::Tensor &, const at::Tensor &, std::optional<at::Tensor> &, float, int, int, float, int, std::optional<__nv_bool>, int) [with Config=<unnamed>::TConfig{192, 176, 3, 56U, 256U, 10, 3, 1, 0, 0}, Dtype=cutlass::half_t, HeadDim=64, HeadDimV=64, IsCausal=false]" at line 860 of /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cxx-tests/custom_api/custom_api.cuh
+            instantiation of "std::vector<at::Tensor, std::allocator<at::Tensor>> custom_mha_fwd_noncausal<Config,Dtype,HeadDim,HeadDimV>(at::Tensor &, const at::Tensor &, const at::Tensor &, std::optional<at::Tensor> &, float, int, int, int, float, std::optional<__nv_bool>, int) [with Config=<unnamed>::TConfig{192, 176, 3, 56U, 256U, 10, 3, 1, 0, 0}, Dtype=cutlass::half_t, HeadDim=64, HeadDimV=64]" at line 113 of /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cxx-tests/tune/src/test_b1_h16_s30720_d64_fp16_noncausal/cuda_source/bm192_bn176_st3_prd56_cra256_p10_q3_nc1_sb0_rb0.cu
+            instantiation of "void <unnamed>::benchmark<Element,InputType,IsCausal>(const char *, const <unnamed>::RunOptions &) [with Element=cutlass::half_t, InputType=c10::ScalarType::Half, IsCausal=false]" at line 223 of /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cxx-tests/tune/src/test_b1_h16_s30720_d64_fp16_noncausal/cuda_source/bm192_bn176_st3_prd56_cra256_p10_q3_nc1_sb0_rb0.cu
+
+1 error detected in the compilation of "/home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cxx-tests/tune/src/test_b1_h16_s30720_d64_fp16_noncausal/cuda_source/bm192_bn176_st3_prd56_cra256_p10_q3_nc1_sb0_rb0.cu".
+gmake[3]: *** [CMakeFiles/bm192_bn176_st3_prd56_cra256_p10_q3_nc1_sb0_rb0.dir/build.make:80: CMakeFiles/bm192_bn176_st3_prd56_cra256_p10_q3_nc1_sb0_rb0.dir/home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cxx-tests/tune/src/test_b1_h16_s30720_d64_fp16_noncausal/cuda_source/bm192_bn176_st3_prd56_cra256_p10_q3_nc1_sb0_rb0.cu.o] Error 1
+gmake[2]: *** [CMakeFiles/Makefile2:823: CMakeFiles/bm192_bn176_st3_prd56_cra256_p10_q3_nc1_sb0_rb0.dir/all] Error 2
+gmake[1]: *** [CMakeFiles/Makefile2:830: CMakeFiles/bm192_bn176_st3_prd56_cra256_p10_q3_nc1_sb0_rb0.dir/rule] Error 2
+gmake: *** [Makefile:384: bm192_bn176_st3_prd56_cra256_p10_q3_nc1_sb0_rb0] Error 2
+[19/32] bm192_bn224_st2_prd56_cra256_p12_q0_nc1_sb0_rb0: compile failed (34.5s)
+[ 50%] Built target fa3_prepare_scheduler
+[ 75%] Building CUDA object CMakeFiles/bm192_bn224_st2_prd56_cra256_p12_q0_nc1_sb0_rb0.dir/home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cxx-tests/tune/src/test_b1_h16_s30720_d64_fp16_noncausal/cuda_source/bm192_bn224_st2_prd56_cra256_p12_q0_nc1_sb0_rb0.cu.o
+/home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/epilogue_fwd.hpp(451): error: static assertion failed
+          static_assert(kBlockM <= NumEpilogueThreads);
+          ^
+          detected during:
+            instantiation of "void flash::CollectiveEpilogueFwd<TileShape_MNK_PV_, ClusterShape_, Element_, ArchTag_, NumEpilogueThreads_, Varlen_, PackGQA_, Split_, FP8PermuteCol>::store_zero(const flash::CollectiveEpilogueFwd<TileShape_MNK_PV_, ClusterShape_, Element_, ArchTag_, NumEpilogueThreads_, Varlen_, PackGQA_, Split_, FP8PermuteCol>::Params &, int, const cute::tuple<int32_t, int32_t, int32_t, int32_t> &) [with TileShape_MNK_PV_=cute::tuple<cute::C<192>, cute::C<64>, cute::C<224>>, ClusterShape_=cute::tuple<cute::_1, cute::_1, cute::_1>, Element_=cutlass::half_t, ArchTag_=cutlass::arch::Sm90, NumEpilogueThreads_=128, Varlen_=false, PackGQA_=false, Split_=false, FP8PermuteCol=false]" at line 597 of /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/flash_fwd_kernel_sm90.h
+            instantiation of "void flash::FlashAttnFwdSm90<CollectiveMainloop_, CollectiveEpilogue_, TileScheduler_>::operator()(const flash::FlashAttnFwdSm90<CollectiveMainloop_, CollectiveEpilogue_, TileScheduler_>::Params &, char *) [with CollectiveMainloop_=flash::CollectiveMainloopFwdSm90<<unnamed>::TConfig{192, 224, 2, 56U, 256U, 12, 0, 1, 0, 0}, 2, cute::tuple<cute::_1, cute::_1, cute::_1>, cute::tuple<cute::C<192>, cute::C<224>, cute::C<64>>, 64, cutlass::half_t, float, cutlass::arch::Sm90, false, false, false, false, false, false, false, true, true, false, false, false>, CollectiveEpilogue_=flash::CollectiveEpilogueFwd<cute::tuple<cute::C<192>, cute::C<64>, cute::C<224>>, cute::tuple<cute::_1, cute::_1, cute::_1>, cutlass::half_t, cutlass::arch::Sm90, 128, false, false, false, false>, TileScheduler_=flash::StaticPersistentTileScheduler<false>]" at line 41 of /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/utils.h
+            instantiation of "void flash::enable_sm90_or_later<Kernel>::operator()(Args &&...) [with Kernel=flash::FlashAttnFwdSm90<flash::CollectiveMainloopFwdSm90<<unnamed>::TConfig{192, 224, 2, 56U, 256U, 12, 0, 1, 0, 0}, 2, cute::tuple<cute::_1, cute::_1, cute::_1>, cute::tuple<cute::C<192>, cute::C<224>, cute::C<64>>, 64, cutlass::half_t, float, cutlass::arch::Sm90, false, false, false, false, false, false, false, true, true, false, false, false>, flash::CollectiveEpilogueFwd<cute::tuple<cute::C<192>, cute::C<64>, cute::C<224>>, cute::tuple<cute::_1, cute::_1, cute::_1>, cutlass::half_t, cutlass::arch::Sm90, 128, false, false, false, false>, flash::StaticPersistentTileScheduler<false>>, Args=<const flash::FlashAttnFwdSm90<flash::CollectiveMainloopFwdSm90<<unnamed>::TConfig{192, 224, 2, 56U, 256U, 12, 0, 1, 0, 0}, 2, cute::tuple<cute::_1, cute::_1, cute::_1>, cute::tuple<cute::C<192>, cute::C<224>, cute::C<64>>, 64, cutlass::half_t, float, cutlass::arch::Sm90, false, false, false, false, false, false, false, true, true, false, false, false>, flash::CollectiveEpilogueFwd<cute::tuple<cute::C<192>, cute::C<64>, cute::C<224>>, cute::tuple<cute::_1, cute::_1, cute::_1>, cutlass::half_t, cutlass::arch::Sm90, 128, false, false, false, false>, flash::StaticPersistentTileScheduler<false>>::Params &, char (&)[]>]" at line 122 of /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cutlass/include/cutlass/device_kernel.h
+            instantiation of "void cutlass::device_kernel<Operator>(Operator::Params) [with Operator=flash::enable_sm90_or_later<flash::FlashAttnFwdSm90<flash::CollectiveMainloopFwdSm90<<unnamed>::TConfig{192, 224, 2, 56U, 256U, 12, 0, 1, 0, 0}, 2, cute::tuple<cute::_1, cute::_1, cute::_1>, cute::tuple<cute::C<192>, cute::C<224>, cute::C<64>>, 64, cutlass::half_t, float, cutlass::arch::Sm90, false, false, false, false, false, false, false, true, true, false, false, false>, flash::CollectiveEpilogueFwd<cute::tuple<cute::C<192>, cute::C<64>, cute::C<224>>, cute::tuple<cute::_1, cute::_1, cute::_1>, cutlass::half_t, cutlass::arch::Sm90, 128, false, false, false, false>, flash::StaticPersistentTileScheduler<false>>>]" at line 544 of /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/flash_fwd_launch_template.h
+            instantiation of "void run_flash_fwd_custom<Arch,Config,kHeadDim,kHeadDimV,ClusterM,Element,ElementOut,Is_causal,Is_local,Has_softcap,Varlen,PagedKVNonTMA,AppendKV,HasQv,PackGQA,Split,V_colmajor>(Flash_fwd_params &, cudaStream_t) [with Arch=90, Config=<unnamed>::TConfig{192, 224, 2, 56U, 256U, 12, 0, 1, 0, 0}, kHeadDim=64, kHeadDimV=64, ClusterM=1, Element=cutlass::half_t, ElementOut=cutlass::half_t, Is_causal=false, Is_local=false, Has_softcap=false, Varlen=false, PagedKVNonTMA=false, AppendKV=false, HasQv=false, PackGQA=false, Split=false, V_colmajor=false]" at line 573 of /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/flash_fwd_launch_template.h
+            instantiation of "void run_mha_fwd_custom_fixed_<Arch,Config,T,kHeadDim,kHeadDimV,IsCausal>(Flash_fwd_params &, cudaStream_t) [with Arch=90, Config=<unnamed>::TConfig{192, 224, 2, 56U, 256U, 12, 0, 1, 0, 0}, T=cutlass::half_t, kHeadDim=64, kHeadDimV=64, IsCausal=false]" at line 797 of /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cxx-tests/custom_api/custom_api.cuh
+            instantiation of "std::vector<at::Tensor, std::allocator<at::Tensor>> custom_mha_fwd_template_core<Config,Dtype,HeadDim,HeadDimV,IsCausal>(at::Tensor &, const at::Tensor &, const at::Tensor &, std::optional<at::Tensor> &, float, int, int, float, int, std::optional<__nv_bool>, int) [with Config=<unnamed>::TConfig{192, 224, 2, 56U, 256U, 12, 0, 1, 0, 0}, Dtype=cutlass::half_t, HeadDim=64, HeadDimV=64, IsCausal=false]" at line 860 of /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cxx-tests/custom_api/custom_api.cuh
+            instantiation of "std::vector<at::Tensor, std::allocator<at::Tensor>> custom_mha_fwd_noncausal<Config,Dtype,HeadDim,HeadDimV>(at::Tensor &, const at::Tensor &, const at::Tensor &, std::optional<at::Tensor> &, float, int, int, int, float, std::optional<__nv_bool>, int) [with Config=<unnamed>::TConfig{192, 224, 2, 56U, 256U, 12, 0, 1, 0, 0}, Dtype=cutlass::half_t, HeadDim=64, HeadDimV=64]" at line 113 of /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cxx-tests/tune/src/test_b1_h16_s30720_d64_fp16_noncausal/cuda_source/bm192_bn224_st2_prd56_cra256_p12_q0_nc1_sb0_rb0.cu
+            instantiation of "void <unnamed>::benchmark<Element,InputType,IsCausal>(const char *, const <unnamed>::RunOptions &) [with Element=cutlass::half_t, InputType=c10::ScalarType::Half, IsCausal=false]" at line 223 of /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cxx-tests/tune/src/test_b1_h16_s30720_d64_fp16_noncausal/cuda_source/bm192_bn224_st2_prd56_cra256_p12_q0_nc1_sb0_rb0.cu
+
+1 error detected in the compilation of "/home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cxx-tests/tune/src/test_b1_h16_s30720_d64_fp16_noncausal/cuda_source/bm192_bn224_st2_prd56_cra256_p12_q0_nc1_sb0_rb0.cu".
+gmake[3]: *** [CMakeFiles/bm192_bn224_st2_prd56_cra256_p12_q0_nc1_sb0_rb0.dir/build.make:80: CMakeFiles/bm192_bn224_st2_prd56_cra256_p12_q0_nc1_sb0_rb0.dir/home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cxx-tests/tune/src/test_b1_h16_s30720_d64_fp16_noncausal/cuda_source/bm192_bn224_st2_prd56_cra256_p12_q0_nc1_sb0_rb0.cu.o] Error 1
+gmake[2]: *** [CMakeFiles/Makefile2:855: CMakeFiles/bm192_bn224_st2_prd56_cra256_p12_q0_nc1_sb0_rb0.dir/all] Error 2
+gmake[1]: *** [CMakeFiles/Makefile2:862: CMakeFiles/bm192_bn224_st2_prd56_cra256_p12_q0_nc1_sb0_rb0.dir/rule] Error 2
+gmake: *** [Makefile:397: bm192_bn224_st2_prd56_cra256_p12_q0_nc1_sb0_rb0] Error 2
+[20/32] bm64_bn176_st2_prd56_cra256_p7_q4_nc1_sb0_rb0: compiled (57.7s)
+[21/32] bm64_bn208_st3_prd56_cra256_p9_q0_nc1_sb0_rb0: compiled (56.6s)
+[22/32] bm192_bn128_st3_prd56_cra256_p6_q4_nc1_sb0_rb0: compile failed (34.7s)
+[ 50%] Built target fa3_prepare_scheduler
+[ 75%] Building CUDA object CMakeFiles/bm192_bn128_st3_prd56_cra256_p6_q4_nc1_sb0_rb0.dir/home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cxx-tests/tune/src/test_b1_h16_s30720_d64_fp16_noncausal/cuda_source/bm192_bn128_st3_prd56_cra256_p6_q4_nc1_sb0_rb0.cu.o
+/home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/epilogue_fwd.hpp(451): error: static assertion failed
+          static_assert(kBlockM <= NumEpilogueThreads);
+          ^
+          detected during:
+            instantiation of "void flash::CollectiveEpilogueFwd<TileShape_MNK_PV_, ClusterShape_, Element_, ArchTag_, NumEpilogueThreads_, Varlen_, PackGQA_, Split_, FP8PermuteCol>::store_zero(const flash::CollectiveEpilogueFwd<TileShape_MNK_PV_, ClusterShape_, Element_, ArchTag_, NumEpilogueThreads_, Varlen_, PackGQA_, Split_, FP8PermuteCol>::Params &, int, const cute::tuple<int32_t, int32_t, int32_t, int32_t> &) [with TileShape_MNK_PV_=cute::tuple<cute::C<192>, cute::C<64>, cute::C<128>>, ClusterShape_=cute::tuple<cute::_1, cute::_1, cute::_1>, Element_=cutlass::half_t, ArchTag_=cutlass::arch::Sm90, NumEpilogueThreads_=128, Varlen_=false, PackGQA_=false, Split_=false, FP8PermuteCol=false]" at line 597 of /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/flash_fwd_kernel_sm90.h
+            instantiation of "void flash::FlashAttnFwdSm90<CollectiveMainloop_, CollectiveEpilogue_, TileScheduler_>::operator()(const flash::FlashAttnFwdSm90<CollectiveMainloop_, CollectiveEpilogue_, TileScheduler_>::Params &, char *) [with CollectiveMainloop_=flash::CollectiveMainloopFwdSm90<<unnamed>::TConfig{192, 128, 3, 56U, 256U, 6, 4, 1, 0, 0}, 3, cute::tuple<cute::_1, cute::_1, cute::_1>, cute::tuple<cute::C<192>, cute::C<128>, cute::C<64>>, 64, cutlass::half_t, float, cutlass::arch::Sm90, false, false, false, false, false, false, false, true, true, false, false, false>, CollectiveEpilogue_=flash::CollectiveEpilogueFwd<cute::tuple<cute::C<192>, cute::C<64>, cute::C<128>>, cute::tuple<cute::_1, cute::_1, cute::_1>, cutlass::half_t, cutlass::arch::Sm90, 128, false, false, false, false>, TileScheduler_=flash::StaticPersistentTileScheduler<false>]" at line 41 of /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/utils.h
+            instantiation of "void flash::enable_sm90_or_later<Kernel>::operator()(Args &&...) [with Kernel=flash::FlashAttnFwdSm90<flash::CollectiveMainloopFwdSm90<<unnamed>::TConfig{192, 128, 3, 56U, 256U, 6, 4, 1, 0, 0}, 3, cute::tuple<cute::_1, cute::_1, cute::_1>, cute::tuple<cute::C<192>, cute::C<128>, cute::C<64>>, 64, cutlass::half_t, float, cutlass::arch::Sm90, false, false, false, false, false, false, false, true, true, false, false, false>, flash::CollectiveEpilogueFwd<cute::tuple<cute::C<192>, cute::C<64>, cute::C<128>>, cute::tuple<cute::_1, cute::_1, cute::_1>, cutlass::half_t, cutlass::arch::Sm90, 128, false, false, false, false>, flash::StaticPersistentTileScheduler<false>>, Args=<const flash::FlashAttnFwdSm90<flash::CollectiveMainloopFwdSm90<<unnamed>::TConfig{192, 128, 3, 56U, 256U, 6, 4, 1, 0, 0}, 3, cute::tuple<cute::_1, cute::_1, cute::_1>, cute::tuple<cute::C<192>, cute::C<128>, cute::C<64>>, 64, cutlass::half_t, float, cutlass::arch::Sm90, false, false, false, false, false, false, false, true, true, false, false, false>, flash::CollectiveEpilogueFwd<cute::tuple<cute::C<192>, cute::C<64>, cute::C<128>>, cute::tuple<cute::_1, cute::_1, cute::_1>, cutlass::half_t, cutlass::arch::Sm90, 128, false, false, false, false>, flash::StaticPersistentTileScheduler<false>>::Params &, char (&)[]>]" at line 122 of /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cutlass/include/cutlass/device_kernel.h
+            instantiation of "void cutlass::device_kernel<Operator>(Operator::Params) [with Operator=flash::enable_sm90_or_later<flash::FlashAttnFwdSm90<flash::CollectiveMainloopFwdSm90<<unnamed>::TConfig{192, 128, 3, 56U, 256U, 6, 4, 1, 0, 0}, 3, cute::tuple<cute::_1, cute::_1, cute::_1>, cute::tuple<cute::C<192>, cute::C<128>, cute::C<64>>, 64, cutlass::half_t, float, cutlass::arch::Sm90, false, false, false, false, false, false, false, true, true, false, false, false>, flash::CollectiveEpilogueFwd<cute::tuple<cute::C<192>, cute::C<64>, cute::C<128>>, cute::tuple<cute::_1, cute::_1, cute::_1>, cutlass::half_t, cutlass::arch::Sm90, 128, false, false, false, false>, flash::StaticPersistentTileScheduler<false>>>]" at line 544 of /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/flash_fwd_launch_template.h
+            instantiation of "void run_flash_fwd_custom<Arch,Config,kHeadDim,kHeadDimV,ClusterM,Element,ElementOut,Is_causal,Is_local,Has_softcap,Varlen,PagedKVNonTMA,AppendKV,HasQv,PackGQA,Split,V_colmajor>(Flash_fwd_params &, cudaStream_t) [with Arch=90, Config=<unnamed>::TConfig{192, 128, 3, 56U, 256U, 6, 4, 1, 0, 0}, kHeadDim=64, kHeadDimV=64, ClusterM=1, Element=cutlass::half_t, ElementOut=cutlass::half_t, Is_causal=false, Is_local=false, Has_softcap=false, Varlen=false, PagedKVNonTMA=false, AppendKV=false, HasQv=false, PackGQA=false, Split=false, V_colmajor=false]" at line 573 of /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/flash_fwd_launch_template.h
+            instantiation of "void run_mha_fwd_custom_fixed_<Arch,Config,T,kHeadDim,kHeadDimV,IsCausal>(Flash_fwd_params &, cudaStream_t) [with Arch=90, Config=<unnamed>::TConfig{192, 128, 3, 56U, 256U, 6, 4, 1, 0, 0}, T=cutlass::half_t, kHeadDim=64, kHeadDimV=64, IsCausal=false]" at line 797 of /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cxx-tests/custom_api/custom_api.cuh
+            instantiation of "std::vector<at::Tensor, std::allocator<at::Tensor>> custom_mha_fwd_template_core<Config,Dtype,HeadDim,HeadDimV,IsCausal>(at::Tensor &, const at::Tensor &, const at::Tensor &, std::optional<at::Tensor> &, float, int, int, float, int, std::optional<__nv_bool>, int) [with Config=<unnamed>::TConfig{192, 128, 3, 56U, 256U, 6, 4, 1, 0, 0}, Dtype=cutlass::half_t, HeadDim=64, HeadDimV=64, IsCausal=false]" at line 860 of /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cxx-tests/custom_api/custom_api.cuh
+            instantiation of "std::vector<at::Tensor, std::allocator<at::Tensor>> custom_mha_fwd_noncausal<Config,Dtype,HeadDim,HeadDimV>(at::Tensor &, const at::Tensor &, const at::Tensor &, std::optional<at::Tensor> &, float, int, int, int, float, std::optional<__nv_bool>, int) [with Config=<unnamed>::TConfig{192, 128, 3, 56U, 256U, 6, 4, 1, 0, 0}, Dtype=cutlass::half_t, HeadDim=64, HeadDimV=64]" at line 113 of /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cxx-tests/tune/src/test_b1_h16_s30720_d64_fp16_noncausal/cuda_source/bm192_bn128_st3_prd56_cra256_p6_q4_nc1_sb0_rb0.cu
+            instantiation of "void <unnamed>::benchmark<Element,InputType,IsCausal>(const char *, const <unnamed>::RunOptions &) [with Element=cutlass::half_t, InputType=c10::ScalarType::Half, IsCausal=false]" at line 223 of /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cxx-tests/tune/src/test_b1_h16_s30720_d64_fp16_noncausal/cuda_source/bm192_bn128_st3_prd56_cra256_p6_q4_nc1_sb0_rb0.cu
+
+1 error detected in the compilation of "/home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cxx-tests/tune/src/test_b1_h16_s30720_d64_fp16_noncausal/cuda_source/bm192_bn128_st3_prd56_cra256_p6_q4_nc1_sb0_rb0.cu".
+gmake[3]: *** [CMakeFiles/bm192_bn128_st3_prd56_cra256_p6_q4_nc1_sb0_rb0.dir/build.make:80: CMakeFiles/bm192_bn128_st3_prd56_cra256_p6_q4_nc1_sb0_rb0.dir/home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cxx-tests/tune/src/test_b1_h16_s30720_d64_fp16_noncausal/cuda_source/bm192_bn128_st3_prd56_cra256_p6_q4_nc1_sb0_rb0.cu.o] Error 1
+gmake[2]: *** [CMakeFiles/Makefile2:1111: CMakeFiles/bm192_bn128_st3_prd56_cra256_p6_q4_nc1_sb0_rb0.dir/all] Error 2
+gmake[1]: *** [CMakeFiles/Makefile2:1118: CMakeFiles/bm192_bn128_st3_prd56_cra256_p6_q4_nc1_sb0_rb0.dir/rule] Error 2
+gmake: *** [Makefile:501: bm192_bn128_st3_prd56_cra256_p6_q4_nc1_sb0_rb0] Error 2
+[23/32] bm384_bn112_st1_prd24_cra240_p1_q1_nc2_sb0_rb0: compile failed (36.1s)
+[ 50%] Built target fa3_prepare_scheduler
+[ 75%] Building CUDA object CMakeFiles/bm384_bn112_st1_prd24_cra240_p1_q1_nc2_sb0_rb0.dir/home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cxx-tests/tune/src/test_b1_h16_s30720_d64_fp16_noncausal/cuda_source/bm384_bn112_st1_prd24_cra240_p1_q1_nc2_sb0_rb0.cu.o
+/home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/epilogue_fwd.hpp(451): error: static assertion failed
+          static_assert(kBlockM <= NumEpilogueThreads);
+          ^
+          detected during:
+            instantiation of "void flash::CollectiveEpilogueFwd<TileShape_MNK_PV_, ClusterShape_, Element_, ArchTag_, NumEpilogueThreads_, Varlen_, PackGQA_, Split_, FP8PermuteCol>::store_zero(const flash::CollectiveEpilogueFwd<TileShape_MNK_PV_, ClusterShape_, Element_, ArchTag_, NumEpilogueThreads_, Varlen_, PackGQA_, Split_, FP8PermuteCol>::Params &, int, const cute::tuple<int32_t, int32_t, int32_t, int32_t> &) [with TileShape_MNK_PV_=cute::tuple<cute::C<384>, cute::C<64>, cute::C<112>>, ClusterShape_=cute::tuple<cute::_1, cute::_1, cute::_1>, Element_=cutlass::half_t, ArchTag_=cutlass::arch::Sm90, NumEpilogueThreads_=256, Varlen_=false, PackGQA_=false, Split_=false, FP8PermuteCol=false]" at line 597 of /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/flash_fwd_kernel_sm90.h
+            instantiation of "void flash::FlashAttnFwdSm90<CollectiveMainloop_, CollectiveEpilogue_, TileScheduler_>::operator()(const flash::FlashAttnFwdSm90<CollectiveMainloop_, CollectiveEpilogue_, TileScheduler_>::Params &, char *) [with CollectiveMainloop_=flash::CollectiveMainloopFwdSm90<<unnamed>::TConfig{384, 112, 1, 24U, 240U, 1, 1, 2, 0, 0}, 1, cute::tuple<cute::_1, cute::_1, cute::_1>, cute::tuple<cute::C<384>, cute::C<112>, cute::C<64>>, 64, cutlass::half_t, float, cutlass::arch::Sm90, false, false, false, false, false, false, false, true, true, false, false, false>, CollectiveEpilogue_=flash::CollectiveEpilogueFwd<cute::tuple<cute::C<384>, cute::C<64>, cute::C<112>>, cute::tuple<cute::_1, cute::_1, cute::_1>, cutlass::half_t, cutlass::arch::Sm90, 256, false, false, false, false>, TileScheduler_=flash::StaticPersistentTileScheduler<false>]" at line 41 of /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/utils.h
+            instantiation of "void flash::enable_sm90_or_later<Kernel>::operator()(Args &&...) [with Kernel=flash::FlashAttnFwdSm90<flash::CollectiveMainloopFwdSm90<<unnamed>::TConfig{384, 112, 1, 24U, 240U, 1, 1, 2, 0, 0}, 1, cute::tuple<cute::_1, cute::_1, cute::_1>, cute::tuple<cute::C<384>, cute::C<112>, cute::C<64>>, 64, cutlass::half_t, float, cutlass::arch::Sm90, false, false, false, false, false, false, false, true, true, false, false, false>, flash::CollectiveEpilogueFwd<cute::tuple<cute::C<384>, cute::C<64>, cute::C<112>>, cute::tuple<cute::_1, cute::_1, cute::_1>, cutlass::half_t, cutlass::arch::Sm90, 256, false, false, false, false>, flash::StaticPersistentTileScheduler<false>>, Args=<const flash::FlashAttnFwdSm90<flash::CollectiveMainloopFwdSm90<<unnamed>::TConfig{384, 112, 1, 24U, 240U, 1, 1, 2, 0, 0}, 1, cute::tuple<cute::_1, cute::_1, cute::_1>, cute::tuple<cute::C<384>, cute::C<112>, cute::C<64>>, 64, cutlass::half_t, float, cutlass::arch::Sm90, false, false, false, false, false, false, false, true, true, false, false, false>, flash::CollectiveEpilogueFwd<cute::tuple<cute::C<384>, cute::C<64>, cute::C<112>>, cute::tuple<cute::_1, cute::_1, cute::_1>, cutlass::half_t, cutlass::arch::Sm90, 256, false, false, false, false>, flash::StaticPersistentTileScheduler<false>>::Params &, char (&)[]>]" at line 122 of /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cutlass/include/cutlass/device_kernel.h
+            instantiation of "void cutlass::device_kernel<Operator>(Operator::Params) [with Operator=flash::enable_sm90_or_later<flash::FlashAttnFwdSm90<flash::CollectiveMainloopFwdSm90<<unnamed>::TConfig{384, 112, 1, 24U, 240U, 1, 1, 2, 0, 0}, 1, cute::tuple<cute::_1, cute::_1, cute::_1>, cute::tuple<cute::C<384>, cute::C<112>, cute::C<64>>, 64, cutlass::half_t, float, cutlass::arch::Sm90, false, false, false, false, false, false, false, true, true, false, false, false>, flash::CollectiveEpilogueFwd<cute::tuple<cute::C<384>, cute::C<64>, cute::C<112>>, cute::tuple<cute::_1, cute::_1, cute::_1>, cutlass::half_t, cutlass::arch::Sm90, 256, false, false, false, false>, flash::StaticPersistentTileScheduler<false>>>]" at line 544 of /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/flash_fwd_launch_template.h
+            instantiation of "void run_flash_fwd_custom<Arch,Config,kHeadDim,kHeadDimV,ClusterM,Element,ElementOut,Is_causal,Is_local,Has_softcap,Varlen,PagedKVNonTMA,AppendKV,HasQv,PackGQA,Split,V_colmajor>(Flash_fwd_params &, cudaStream_t) [with Arch=90, Config=<unnamed>::TConfig{384, 112, 1, 24U, 240U, 1, 1, 2, 0, 0}, kHeadDim=64, kHeadDimV=64, ClusterM=1, Element=cutlass::half_t, ElementOut=cutlass::half_t, Is_causal=false, Is_local=false, Has_softcap=false, Varlen=false, PagedKVNonTMA=false, AppendKV=false, HasQv=false, PackGQA=false, Split=false, V_colmajor=false]" at line 573 of /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/flash_fwd_launch_template.h
+            instantiation of "void run_mha_fwd_custom_fixed_<Arch,Config,T,kHeadDim,kHeadDimV,IsCausal>(Flash_fwd_params &, cudaStream_t) [with Arch=90, Config=<unnamed>::TConfig{384, 112, 1, 24U, 240U, 1, 1, 2, 0, 0}, T=cutlass::half_t, kHeadDim=64, kHeadDimV=64, IsCausal=false]" at line 797 of /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cxx-tests/custom_api/custom_api.cuh
+            instantiation of "std::vector<at::Tensor, std::allocator<at::Tensor>> custom_mha_fwd_template_core<Config,Dtype,HeadDim,HeadDimV,IsCausal>(at::Tensor &, const at::Tensor &, const at::Tensor &, std::optional<at::Tensor> &, float, int, int, float, int, std::optional<__nv_bool>, int) [with Config=<unnamed>::TConfig{384, 112, 1, 24U, 240U, 1, 1, 2, 0, 0}, Dtype=cutlass::half_t, HeadDim=64, HeadDimV=64, IsCausal=false]" at line 860 of /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cxx-tests/custom_api/custom_api.cuh
+            instantiation of "std::vector<at::Tensor, std::allocator<at::Tensor>> custom_mha_fwd_noncausal<Config,Dtype,HeadDim,HeadDimV>(at::Tensor &, const at::Tensor &, const at::Tensor &, std::optional<at::Tensor> &, float, int, int, int, float, std::optional<__nv_bool>, int) [with Config=<unnamed>::TConfig{384, 112, 1, 24U, 240U, 1, 1, 2, 0, 0}, Dtype=cutlass::half_t, HeadDim=64, HeadDimV=64]" at line 113 of /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cxx-tests/tune/src/test_b1_h16_s30720_d64_fp16_noncausal/cuda_source/bm384_bn112_st1_prd24_cra240_p1_q1_nc2_sb0_rb0.cu
+            instantiation of "void <unnamed>::benchmark<Element,InputType,IsCausal>(const char *, const <unnamed>::RunOptions &) [with Element=cutlass::half_t, InputType=c10::ScalarType::Half, IsCausal=false]" at line 223 of /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cxx-tests/tune/src/test_b1_h16_s30720_d64_fp16_noncausal/cuda_source/bm384_bn112_st1_prd24_cra240_p1_q1_nc2_sb0_rb0.cu
+
+1 error detected in the compilation of "/home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cxx-tests/tune/src/test_b1_h16_s30720_d64_fp16_noncausal/cuda_source/bm384_bn112_st1_prd24_cra240_p1_q1_nc2_sb0_rb0.cu".
+gmake[3]: *** [CMakeFiles/bm384_bn112_st1_prd24_cra240_p1_q1_nc2_sb0_rb0.dir/build.make:80: CMakeFiles/bm384_bn112_st1_prd24_cra240_p1_q1_nc2_sb0_rb0.dir/home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cxx-tests/tune/src/test_b1_h16_s30720_d64_fp16_noncausal/cuda_source/bm384_bn112_st1_prd24_cra240_p1_q1_nc2_sb0_rb0.cu.o] Error 1
+gmake[2]: *** [CMakeFiles/Makefile2:1143: CMakeFiles/bm384_bn112_st1_prd24_cra240_p1_q1_nc2_sb0_rb0.dir/all] Error 2
+gmake[1]: *** [CMakeFiles/Makefile2:1150: CMakeFiles/bm384_bn112_st1_prd24_cra240_p1_q1_nc2_sb0_rb0.dir/rule] Error 2
+gmake: *** [Makefile:514: bm384_bn112_st1_prd24_cra240_p1_q1_nc2_sb0_rb0] Error 2
+[24/32] bm192_bn144_st2_prd32_cra160_p2_q0_nc3_sb0_rb0: compiled (57.8s)
+[25/32] bm256_bn160_st3_prd24_cra240_p0_q0_nc2_sb0_rb0: performance warning (60.0s)
+  ptxas info    : (C7512) Potential Performance Loss: wgmma.mma_async instructions are serialized due to insufficient register resources for the function '_ZN7cutlass13device_kernelIN5flash20enable_sm90_or_laterINS1_16FlashAttnFwdSm90INS1_25CollectiveMainloopFwdSm90IXtlN82_GLOBAL__N__7e0fd35a_49_bm256_bn160_st3_prd24_cra240_p0_q0_nc2_sb0_rb0_cu_79fa05bf7TConfigELi256ELi160ELi3ELj24ELj240ELi0ELi0ELi2ELi0ELi0EEELi3EN4cute5tupleIJNS7_1CILi1EEESA_SA_EEENS8_IJNS9_ILi256EEENS9_ILi160EEENS9_ILi64EEEEEELi64ENS_6half_tEfNS_4arch4Sm90ELb0ELb0ELb0ELb0ELb0ELb0ELb0ELb1ELb1ELb0ELb0ELb0EEENS1_21CollectiveEpilogueFwdINS8_IJSC_SE_SD_EEESB_SG_SI_Li256ELb0ELb0ELb0ELb0EEENS1_29StaticPersistentTileSchedulerILb0EEEEEEEEEvNT_6ParamsE'
+[26/32] bm128_bn144_st2_prd24_cra240_p3_q3_nc2_sb0_rb0: compiled (59.3s)
+[27/32] bm128_bn240_st1_prd24_cra240_p11_q0_nc2_sb0_rb0: compiled (57.4s)
+[28/32] bm192_bn96_st1_prd32_cra160_p1_q2_nc3_sb0_rb0: compiled (60.6s)
+[29/32] bm128_bn128_st2_prd56_cra256_p0_q4_nc1_sb0_rb0: compiled (58.9s)
+[30/32] bm128_bn208_st1_prd56_cra256_p0_q1_nc1_sb0_rb0: performance warning (61.8s)
+  ptxas info    : (C7512) Potential Performance Loss: wgmma.mma_async instructions are serialized due to insufficient register resources for the function '_ZN7cutlass13device_kernelIN5flash20enable_sm90_or_laterINS1_16FlashAttnFwdSm90INS1_25CollectiveMainloopFwdSm90IXtlN82_GLOBAL__N__aa06e66d_49_bm128_bn208_st1_prd56_cra256_p0_q1_nc1_sb0_rb0_cu_79fa05bf7TConfigELi128ELi208ELi1ELj56ELj256ELi0ELi1ELi1ELi0ELi0EEELi1EN4cute5tupleIJNS7_1CILi1EEESA_SA_EEENS8_IJNS9_ILi128EEENS9_ILi208EEENS9_ILi64EEEEEELi64ENS_6half_tEfNS_4arch4Sm90ELb0ELb0ELb0ELb0ELb0ELb0ELb0ELb1ELb1ELb0ELb0ELb0EEENS1_21CollectiveEpilogueFwdINS8_IJSC_SE_SD_EEESB_SG_SI_Li128ELb0ELb0ELb0ELb0EEENS1_29StaticPersistentTileSchedulerILb0EEEEEEEEEvNT_6ParamsE'
+[31/32] bm128_bn112_st3_prd56_cra256_p5_q1_nc1_sb0_rb0: compiled (62.9s)
+[32/32] bm128_bn192_st2_prd56_cra256_p7_q2_nc1_sb0_rb0: compiled (63.3s)
+compiled 20/32 configs successfully
+[1/20] bm256_bn192_st2_prd24_cra240_p5_q2_nc2_sb0_rb0
+  time=14.104 ms, tflops=274.07
+[2/20] bm128_bn112_st3_prd24_cra240_p7_q2_nc2_sb0_rb0
+  time=15.917 ms, tflops=242.86
+[3/20] bm128_bn224_st2_prd56_cra256_p13_q3_nc1_sb0_rb0
+  time=22.336 ms, tflops=173.06
+[4/20] bm256_bn224_st2_prd24_cra240_p10_q0_nc2_sb0_rb0
+  time=20.672 ms, tflops=186.99
+[5/20] bm64_bn208_st3_prd56_cra256_p5_q0_nc1_sb0_rb0
+  time=19.566 ms, tflops=197.56
+[6/20] bm64_bn112_st3_prd56_cra256_p1_q2_nc1_sb0_rb0
+  time=19.752 ms, tflops=195.70
+[7/20] bm128_bn176_st1_prd24_cra240_p9_q2_nc2_sb0_rb0
+  time=17.726 ms, tflops=218.07
+[8/20] bm64_bn128_st3_prd56_cra256_p0_q1_nc1_sb0_rb0
+  time=16.655 ms, tflops=232.09
+[9/20] bm128_bn208_st3_prd24_cra240_p12_q4_nc2_sb0_rb0
+  time=13.937 ms, tflops=277.34
+[10/20] bm128_bn240_st1_prd56_cra256_p8_q2_nc1_sb0_rb0
+  failed: Command '['/home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cxx-tests/tune/src/test_b1_h16_s30720_d64_fp16_noncausal/build/rl5/bin/bm128_bn240_st1_prd56_cra256_p8_q2_nc1_sb0_rb0']' timed out after 120.0 seconds
+[11/20] bm128_bn224_st3_prd56_cra256_p8_q0_nc1_sb0_rb0
+  time=24.178 ms, tflops=159.87
+[12/20] bm64_bn176_st2_prd56_cra256_p7_q4_nc1_sb0_rb0
+  time=17.989 ms, tflops=214.88
+[13/20] bm64_bn208_st3_prd56_cra256_p9_q0_nc1_sb0_rb0
+  time=19.372 ms, tflops=199.54
+[14/20] bm192_bn144_st2_prd32_cra160_p2_q0_nc3_sb0_rb0
+  time=14.897 ms, tflops=259.48
+[15/20] bm128_bn144_st2_prd24_cra240_p3_q3_nc2_sb0_rb0
+  time=14.728 ms, tflops=262.46
+[16/20] bm192_bn96_st1_prd32_cra160_p1_q2_nc3_sb0_rb0
+  time=13.610 ms, tflops=284.02
+[17/20] bm128_bn128_st2_prd56_cra256_p0_q4_nc1_sb0_rb0
+  time=18.037 ms, tflops=214.31
+[18/20] bm128_bn240_st1_prd24_cra240_p11_q0_nc2_sb0_rb0
+  time=18.660 ms, tflops=207.15
+[19/20] bm128_bn112_st3_prd56_cra256_p5_q1_nc1_sb0_rb0
+  time=21.798 ms, tflops=177.33
+[20/20] bm128_bn192_st2_prd56_cra256_p7_q2_nc1_sb0_rb0
+  time=18.933 ms, tflops=204.17
+stage 2 / execution schedule: 37 configs, register-usage-level=5
+CUDA sources: 37 generated, 0 cached
++ cmake -Wno-dev -S /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cxx-tests/tune/src/test_b1_h16_s30720_d64_fp16_noncausal/build/project_rl5 -B /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cxx-tests/tune/src/test_b1_h16_s30720_d64_fp16_noncausal/build/rl5 -DCMAKE_BUILD_TYPE=Release -DCMAKE_CUDA_ARCHITECTURES=90a
+-- Hopper root dir: /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper
+-- FA Python env dir: /home/xiebaokang/miniconda3/envs/torch
+-- Found Python lib dir: /home/xiebaokang/miniconda3/envs/torch/lib/python3.10
+-- PyTorch: CUDA detected: 12.8
+-- PyTorch: CUDA nvcc is: /usr/local/cuda/bin/nvcc
+-- PyTorch: CUDA toolkit directory: /usr/local/cuda
+-- PyTorch: Header version is: 12.8
+-- Found Python: /home/xiebaokang/miniconda3/envs/torch/bin/python3.10 (found version "3.10.19") found components: Interpreter
+CMake Warning at /home/xiebaokang/miniconda3/envs/torch/lib/python3.10/site-packages/torch/share/cmake/Caffe2/public/cuda.cmake:140 (message):
+  Failed to compute shorthash for libnvrtc.so
+Call Stack (most recent call first):
+  /home/xiebaokang/miniconda3/envs/torch/lib/python3.10/site-packages/torch/share/cmake/Caffe2/Caffe2Config.cmake:86 (include)
+  /home/xiebaokang/miniconda3/envs/torch/lib/python3.10/site-packages/torch/share/cmake/Torch/TorchConfig.cmake:68 (find_package)
+  /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cxx-tests/cmake/flashVenv.cmake:32 (find_package)
+  CMakeLists.txt:7 (include)
+
+
+-- Could NOT find nvtx3 (missing: nvtx3_dir) 
+CMake Warning at /home/xiebaokang/miniconda3/envs/torch/lib/python3.10/site-packages/torch/share/cmake/Caffe2/public/cuda.cmake:184 (message):
+  Cannot find NVTX3, find old NVTX instead
+Call Stack (most recent call first):
+  /home/xiebaokang/miniconda3/envs/torch/lib/python3.10/site-packages/torch/share/cmake/Caffe2/Caffe2Config.cmake:86 (include)
+  /home/xiebaokang/miniconda3/envs/torch/lib/python3.10/site-packages/torch/share/cmake/Torch/TorchConfig.cmake:68 (find_package)
+  /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cxx-tests/cmake/flashVenv.cmake:32 (find_package)
+  CMakeLists.txt:7 (include)
+
+
+-- USE_CUDNN is set to 0. Compiling without cuDNN support
+-- USE_CUSPARSELT is set to 0. Compiling without cuSPARSELt support
+-- USE_CUDSS is set to 0. Compiling without cuDSS support
+-- USE_CUFILE is set to 0. Compiling without cuFile support
+-- Added CUDA NVCC flags for: -gencode;arch=compute_90a,code=sm_90a
+CMake Warning at /home/xiebaokang/miniconda3/envs/torch/lib/python3.10/site-packages/torch/share/cmake/Torch/TorchConfig.cmake:22 (message):
+  static library kineto_LIBRARY-NOTFOUND not found.
+Call Stack (most recent call first):
+  /home/xiebaokang/miniconda3/envs/torch/lib/python3.10/site-packages/torch/share/cmake/Torch/TorchConfig.cmake:121 (append_torchlib_if_found)
+  /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cxx-tests/cmake/flashVenv.cmake:32 (find_package)
+  CMakeLists.txt:7 (include)
+
+
+-- Found Python: /home/xiebaokang/miniconda3/envs/torch/bin/python3.10 (found version "3.10.19") found components: Interpreter Development Development.Module Development.Embed
+-- CUTLASS include dir: /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cutlass/include
+-- Custom API dir: /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cxx-tests/custom_api
+-- Configuring done (0.5s)
+-- Generating done (0.1s)
+-- Build files have been written to: /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cxx-tests/tune/src/test_b1_h16_s30720_d64_fp16_noncausal/build/rl5
++ cmake --build /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cxx-tests/tune/src/test_b1_h16_s30720_d64_fp16_noncausal/build/rl5 --target fa3_prepare_scheduler --parallel 1
+[100%] Built target fa3_prepare_scheduler
+building 37 config target(s) with 16 parallel worker(s)
+[1/37] bm192_bn144_st2_prd32_cra160_p2_q0_nc3_sb1_rb0: compiled (58.2s)
+[2/37] bm192_bn144_st2_prd32_cra160_p2_q0_nc3_sb0_rb1: compiled (59.1s)
+[3/37] bm192_bn96_st1_prd32_cra160_p1_q2_nc3_sb1_rb0: compiled (59.1s)
+[4/37] bm192_bn144_st2_prd32_cra160_p2_q0_nc3_sb1_rb1: compiled (59.2s)
+[5/37] bm192_bn96_st1_prd32_cra160_p1_q2_nc3_sb0_rb1: compiled (59.4s)
+[6/37] bm128_bn112_st3_prd24_cra240_p7_q2_nc2_sb0_rb1: compiled (59.5s)
+[7/37] bm128_bn208_st3_prd24_cra240_p12_q4_nc2_sb1_rb0: compiled (59.9s)
+[8/37] bm128_bn144_st2_prd24_cra240_p3_q3_nc2_sb1_rb1: compiled (60.1s)
+[9/37] bm128_bn144_st2_prd24_cra240_p3_q3_nc2_sb0_rb1: compiled (60.1s)
+[10/37] bm128_bn208_st3_prd24_cra240_p12_q4_nc2_sb1_rb1: compiled (60.1s)
+[11/37] bm192_bn96_st1_prd32_cra160_p1_q2_nc3_sb1_rb1: compiled (60.8s)
+[12/37] bm128_bn208_st3_prd24_cra240_p12_q4_nc2_sb0_rb1: compiled (61.5s)
+[13/37] bm128_bn144_st2_prd24_cra240_p3_q3_nc2_sb1_rb0: compiled (64.0s)
+[14/37] bm256_bn192_st2_prd24_cra240_p5_q2_nc2_sb0_rb1: compiled (65.6s)
+[15/37] bm256_bn192_st2_prd24_cra240_p5_q2_nc2_sb1_rb0: compiled (65.9s)
+[16/37] bm256_bn192_st2_prd24_cra240_p5_q2_nc2_sb1_rb1: compiled (66.9s)
+[17/37] bm64_bn128_st3_prd56_cra256_p0_q1_nc1_sb0_rb1: compiled (57.3s)
+[18/37] bm64_bn176_st2_prd56_cra256_p7_q4_nc1_sb0_rb1: compiled (57.2s)
+[19/37] bm128_bn112_st3_prd24_cra240_p7_q2_nc2_sb1_rb0: compiled (59.2s)
+[20/37] bm128_bn112_st3_prd24_cra240_p7_q2_nc2_sb1_rb1: compiled (59.2s)
+[21/37] bm128_bn240_st1_prd24_cra240_p11_q0_nc2_sb1_rb1: compiled (57.5s)
+[22/37] bm128_bn176_st1_prd24_cra240_p9_q2_nc2_sb0_rb1: compiled (59.3s)
+[23/37] bm128_bn240_st1_prd24_cra240_p11_q0_nc2_sb0_rb1: compiled (58.4s)
+[24/37] bm128_bn176_st1_prd24_cra240_p9_q2_nc2_sb1_rb1: compiled (59.3s)
+[25/37] bm128_bn176_st1_prd24_cra240_p9_q2_nc2_sb1_rb0: compiled (59.8s)
+[26/37] bm128_bn128_st2_prd56_cra256_p0_q4_nc1_sb0_rb1: compiled (59.2s)
+[27/37] bm64_bn208_st3_prd56_cra256_p9_q0_nc1_sb0_rb1: compiled (56.4s)
+[28/37] bm128_bn240_st1_prd24_cra240_p11_q0_nc2_sb1_rb0: compiled (61.1s)
+[29/37] bm64_bn208_st3_prd56_cra256_p5_q0_nc1_sb0_rb1: compiled (56.5s)
+[30/37] bm128_bn192_st2_prd56_cra256_p7_q2_nc1_sb0_rb1: compiled (65.0s)
+[31/37] bm64_bn112_st3_prd56_cra256_p1_q2_nc1_sb0_rb1: compiled (60.9s)
+[32/37] bm256_bn224_st2_prd24_cra240_p10_q0_nc2_sb0_rb1: compiled (61.9s)
+[33/37] bm256_bn224_st2_prd24_cra240_p10_q0_nc2_sb1_rb0: compiled (62.0s)
+[34/37] bm256_bn224_st2_prd24_cra240_p10_q0_nc2_sb1_rb1: compiled (62.3s)
+[35/37] bm128_bn224_st3_prd56_cra256_p8_q0_nc1_sb0_rb1: compiled (61.5s)
+[36/37] bm128_bn112_st3_prd56_cra256_p5_q1_nc1_sb0_rb1: compiled (64.7s)
+[37/37] bm128_bn224_st2_prd56_cra256_p13_q3_nc1_sb0_rb1: compiled (64.5s)
+compiled 37/37 configs successfully
+[1/37] bm192_bn96_st1_prd32_cra160_p1_q2_nc3_sb0_rb1
+  time=13.964 ms, tflops=276.81
+[2/37] bm192_bn96_st1_prd32_cra160_p1_q2_nc3_sb1_rb0
+  time=14.235 ms, tflops=271.54
+[3/37] bm192_bn96_st1_prd32_cra160_p1_q2_nc3_sb1_rb1
+  time=14.021 ms, tflops=275.70
+[4/37] bm128_bn208_st3_prd24_cra240_p12_q4_nc2_sb0_rb1
+  time=14.080 ms, tflops=274.54
+[5/37] bm128_bn208_st3_prd24_cra240_p12_q4_nc2_sb1_rb0
+  time=14.142 ms, tflops=273.33
+[6/37] bm128_bn208_st3_prd24_cra240_p12_q4_nc2_sb1_rb1
+  time=14.215 ms, tflops=271.92
+[7/37] bm256_bn192_st2_prd24_cra240_p5_q2_nc2_sb0_rb1
+  time=14.176 ms, tflops=272.67
+[8/37] bm256_bn192_st2_prd24_cra240_p5_q2_nc2_sb1_rb0
+  time=15.242 ms, tflops=253.61
+[9/37] bm256_bn192_st2_prd24_cra240_p5_q2_nc2_sb1_rb1
+  time=15.412 ms, tflops=250.80
+[10/37] bm128_bn144_st2_prd24_cra240_p3_q3_nc2_sb0_rb1
+  time=14.847 ms, tflops=260.35
+[11/37] bm128_bn144_st2_prd24_cra240_p3_q3_nc2_sb1_rb0
+  time=14.865 ms, tflops=260.04
+[12/37] bm128_bn144_st2_prd24_cra240_p3_q3_nc2_sb1_rb1
+  time=14.941 ms, tflops=258.72
+[13/37] bm192_bn144_st2_prd32_cra160_p2_q0_nc3_sb0_rb1
+  time=14.659 ms, tflops=263.69
+[14/37] bm192_bn144_st2_prd32_cra160_p2_q0_nc3_sb1_rb0
+  time=14.552 ms, tflops=265.62
+[15/37] bm192_bn144_st2_prd32_cra160_p2_q0_nc3_sb1_rb1
+  time=14.919 ms, tflops=259.10
+[16/37] bm128_bn112_st3_prd24_cra240_p7_q2_nc2_sb0_rb1
+  time=16.004 ms, tflops=241.53
+[17/37] bm128_bn112_st3_prd24_cra240_p7_q2_nc2_sb1_rb0
+  time=16.479 ms, tflops=234.57
+[18/37] bm128_bn112_st3_prd24_cra240_p7_q2_nc2_sb1_rb1
+  time=16.964 ms, tflops=227.86
+[19/37] bm64_bn128_st3_prd56_cra256_p0_q1_nc1_sb0_rb1
+  time=16.666 ms, tflops=231.94
+[20/37] bm128_bn176_st1_prd24_cra240_p9_q2_nc2_sb0_rb1
+  time=18.077 ms, tflops=213.83
+[21/37] bm128_bn176_st1_prd24_cra240_p9_q2_nc2_sb1_rb0
+  time=17.568 ms, tflops=220.02
+[22/37] bm128_bn176_st1_prd24_cra240_p9_q2_nc2_sb1_rb1
+  time=17.639 ms, tflops=219.14
+[23/37] bm64_bn176_st2_prd56_cra256_p7_q4_nc1_sb0_rb1
+  time=18.232 ms, tflops=212.01
+[24/37] bm128_bn128_st2_prd56_cra256_p0_q4_nc1_sb0_rb1
+  time=18.587 ms, tflops=207.97
+[25/37] bm128_bn240_st1_prd24_cra240_p11_q0_nc2_sb0_rb1
+  time=18.552 ms, tflops=208.35
+[26/37] bm128_bn240_st1_prd24_cra240_p11_q0_nc2_sb1_rb0
+  time=18.707 ms, tflops=206.64
+[27/37] bm128_bn240_st1_prd24_cra240_p11_q0_nc2_sb1_rb1
+  time=18.860 ms, tflops=204.95
+[28/37] bm128_bn192_st2_prd56_cra256_p7_q2_nc1_sb0_rb1
+  time=19.132 ms, tflops=202.05
+[29/37] bm64_bn208_st3_prd56_cra256_p9_q0_nc1_sb0_rb1
+  time=19.978 ms, tflops=193.48
+[30/37] bm64_bn208_st3_prd56_cra256_p5_q0_nc1_sb0_rb1
+  time=19.523 ms, tflops=198.00
+[31/37] bm64_bn112_st3_prd56_cra256_p1_q2_nc1_sb0_rb1
+  time=20.114 ms, tflops=192.17
+[32/37] bm256_bn224_st2_prd24_cra240_p10_q0_nc2_sb0_rb1
+  time=21.053 ms, tflops=183.61
+[33/37] bm256_bn224_st2_prd24_cra240_p10_q0_nc2_sb1_rb0
+  time=18.816 ms, tflops=205.44
+[34/37] bm256_bn224_st2_prd24_cra240_p10_q0_nc2_sb1_rb1
+  time=18.977 ms, tflops=203.69
+[35/37] bm128_bn112_st3_prd56_cra256_p5_q1_nc1_sb0_rb1
+  time=22.059 ms, tflops=175.23
+[36/37] bm128_bn224_st2_prd56_cra256_p13_q3_nc1_sb0_rb1
+  time=22.869 ms, tflops=169.03
+[37/37] bm128_bn224_st3_prd56_cra256_p8_q0_nc1_sb0_rb1
+  time=23.085 ms, tflops=167.45
+stage 3 / register allocation: 88 configs, register-usage-level=5
+CUDA sources: 88 generated, 0 cached
++ cmake -Wno-dev -S /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cxx-tests/tune/src/test_b1_h16_s30720_d64_fp16_noncausal/build/project_rl5 -B /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cxx-tests/tune/src/test_b1_h16_s30720_d64_fp16_noncausal/build/rl5 -DCMAKE_BUILD_TYPE=Release -DCMAKE_CUDA_ARCHITECTURES=90a
+-- Hopper root dir: /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper
+-- FA Python env dir: /home/xiebaokang/miniconda3/envs/torch
+-- Found Python lib dir: /home/xiebaokang/miniconda3/envs/torch/lib/python3.10
+-- PyTorch: CUDA detected: 12.8
+-- PyTorch: CUDA nvcc is: /usr/local/cuda/bin/nvcc
+-- PyTorch: CUDA toolkit directory: /usr/local/cuda
+-- PyTorch: Header version is: 12.8
+-- Found Python: /home/xiebaokang/miniconda3/envs/torch/bin/python3.10 (found version "3.10.19") found components: Interpreter
+CMake Warning at /home/xiebaokang/miniconda3/envs/torch/lib/python3.10/site-packages/torch/share/cmake/Caffe2/public/cuda.cmake:140 (message):
+  Failed to compute shorthash for libnvrtc.so
+Call Stack (most recent call first):
+  /home/xiebaokang/miniconda3/envs/torch/lib/python3.10/site-packages/torch/share/cmake/Caffe2/Caffe2Config.cmake:86 (include)
+  /home/xiebaokang/miniconda3/envs/torch/lib/python3.10/site-packages/torch/share/cmake/Torch/TorchConfig.cmake:68 (find_package)
+  /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cxx-tests/cmake/flashVenv.cmake:32 (find_package)
+  CMakeLists.txt:7 (include)
+
+
+-- Could NOT find nvtx3 (missing: nvtx3_dir) 
+CMake Warning at /home/xiebaokang/miniconda3/envs/torch/lib/python3.10/site-packages/torch/share/cmake/Caffe2/public/cuda.cmake:184 (message):
+  Cannot find NVTX3, find old NVTX instead
+Call Stack (most recent call first):
+  /home/xiebaokang/miniconda3/envs/torch/lib/python3.10/site-packages/torch/share/cmake/Caffe2/Caffe2Config.cmake:86 (include)
+  /home/xiebaokang/miniconda3/envs/torch/lib/python3.10/site-packages/torch/share/cmake/Torch/TorchConfig.cmake:68 (find_package)
+  /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cxx-tests/cmake/flashVenv.cmake:32 (find_package)
+  CMakeLists.txt:7 (include)
+
+
+-- USE_CUDNN is set to 0. Compiling without cuDNN support
+-- USE_CUSPARSELT is set to 0. Compiling without cuSPARSELt support
+-- USE_CUDSS is set to 0. Compiling without cuDSS support
+-- USE_CUFILE is set to 0. Compiling without cuFile support
+-- Added CUDA NVCC flags for: -gencode;arch=compute_90a,code=sm_90a
+CMake Warning at /home/xiebaokang/miniconda3/envs/torch/lib/python3.10/site-packages/torch/share/cmake/Torch/TorchConfig.cmake:22 (message):
+  static library kineto_LIBRARY-NOTFOUND not found.
+Call Stack (most recent call first):
+  /home/xiebaokang/miniconda3/envs/torch/lib/python3.10/site-packages/torch/share/cmake/Torch/TorchConfig.cmake:121 (append_torchlib_if_found)
+  /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cxx-tests/cmake/flashVenv.cmake:32 (find_package)
+  CMakeLists.txt:7 (include)
+
+
+-- Found Python: /home/xiebaokang/miniconda3/envs/torch/bin/python3.10 (found version "3.10.19") found components: Interpreter Development Development.Module Development.Embed
+-- CUTLASS include dir: /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cutlass/include
+-- Custom API dir: /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cxx-tests/custom_api
+-- Configuring done (0.5s)
+-- Generating done (0.3s)
+-- Build files have been written to: /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cxx-tests/tune/src/test_b1_h16_s30720_d64_fp16_noncausal/build/rl5
++ cmake --build /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cxx-tests/tune/src/test_b1_h16_s30720_d64_fp16_noncausal/build/rl5 --target fa3_prepare_scheduler --parallel 1
+[100%] Built target fa3_prepare_scheduler
+building 88 config target(s) with 16 parallel worker(s)
+[1/88] bm192_bn96_st1_prd24_cra152_p1_q2_nc3_sb0_rb0: compiled (59.2s)
+[2/88] bm192_bn96_st1_prd40_cra152_p1_q2_nc3_sb0_rb0: compiled (59.2s)
+[3/88] bm128_bn208_st3_prd24_cra208_p12_q4_nc2_sb0_rb0: compiled (59.7s)
+[4/88] bm128_bn208_st3_prd24_cra232_p12_q4_nc2_sb0_rb0: compiled (59.8s)
+[5/88] bm128_bn208_st3_prd24_cra200_p12_q4_nc2_sb0_rb0: compiled (59.8s)
+[6/88] bm128_bn208_st3_prd32_cra200_p12_q4_nc2_sb0_rb0: compiled (59.8s)
+[7/88] bm128_bn208_st3_prd24_cra216_p12_q4_nc2_sb0_rb0: compiled (59.9s)
+[8/88] bm128_bn208_st3_prd32_cra232_p12_q4_nc2_sb0_rb0: compiled (60.0s)
+[9/88] bm192_bn96_st1_prd24_cra144_p1_q2_nc3_sb0_rb0: compiled (60.2s)
+[10/88] bm128_bn208_st3_prd32_cra216_p12_q4_nc2_sb0_rb0: compiled (60.2s)
+[11/88] bm192_bn96_st1_prd40_cra144_p1_q2_nc3_sb0_rb0: compiled (60.4s)
+[12/88] bm128_bn208_st3_prd32_cra208_p12_q4_nc2_sb0_rb0: compiled (60.9s)
+[13/88] bm128_bn208_st3_prd32_cra224_p12_q4_nc2_sb0_rb0: compiled (61.3s)
+[14/88] bm128_bn208_st3_prd24_cra224_p12_q4_nc2_sb0_rb0: compiled (61.5s)
+[15/88] bm192_bn96_st1_prd24_cra160_p1_q2_nc3_sb0_rb0: compiled (61.8s)
+[16/88] bm256_bn192_st2_prd24_cra232_p5_q2_nc2_sb0_rb0: compiled (66.1s)
+[17/88] bm192_bn144_st2_prd40_cra152_p2_q0_nc3_sb1_rb0: performance warning (57.6s)
+  ptxas info    : (C7512) Potential Performance Loss: wgmma.mma_async instructions are serialized due to insufficient register resources for the function '_ZN7cutlass13device_kernelIN5flash20enable_sm90_or_laterINS1_16FlashAttnFwdSm90INS1_25CollectiveMainloopFwdSm90IXtlN82_GLOBAL__N__f12f286e_49_bm192_bn144_st2_prd40_cra152_p2_q0_nc3_sb1_rb0_cu_79fa05bf7TConfigELi192ELi144ELi2ELj40ELj152ELi2ELi0ELi3ELi1ELi0EEELi2EN4cute5tupleIJNS7_1CILi1EEESA_SA_EEENS8_IJNS9_ILi192EEENS9_ILi144EEENS9_ILi64EEEEEELi64ENS_6half_tEfNS_4arch4Sm90ELb0ELb0ELb0ELb0ELb0ELb0ELb0ELb1ELb1ELb0ELb0ELb0EEENS1_21CollectiveEpilogueFwdINS8_IJSC_SE_SD_EEESB_SG_SI_Li384ELb0ELb0ELb0ELb0EEENS1_29StaticPersistentTileSchedulerILb0EEEEEEEEEvNT_6ParamsE'
+[18/88] bm192_bn144_st2_prd24_cra160_p2_q0_nc3_sb1_rb0: compiled (57.7s)
+[19/88] bm192_bn144_st2_prd24_cra152_p2_q0_nc3_sb1_rb0: performance warning (58.8s)
+  ptxas info    : (C7512) Potential Performance Loss: wgmma.mma_async instructions are serialized due to insufficient register resources for the function '_ZN7cutlass13device_kernelIN5flash20enable_sm90_or_laterINS1_16FlashAttnFwdSm90INS1_25CollectiveMainloopFwdSm90IXtlN82_GLOBAL__N__2f03008f_49_bm192_bn144_st2_prd24_cra152_p2_q0_nc3_sb1_rb0_cu_79fa05bf7TConfigELi192ELi144ELi2ELj24ELj152ELi2ELi0ELi3ELi1ELi0EEELi2EN4cute5tupleIJNS7_1CILi1EEESA_SA_EEENS8_IJNS9_ILi192EEENS9_ILi144EEENS9_ILi64EEEEEELi64ENS_6half_tEfNS_4arch4Sm90ELb0ELb0ELb0ELb0ELb0ELb0ELb0ELb1ELb1ELb0ELb0ELb0EEENS1_21CollectiveEpilogueFwdINS8_IJSC_SE_SD_EEESB_SG_SI_Li384ELb0ELb0ELb0ELb0EEENS1_29StaticPersistentTileSchedulerILb0EEEEEEEEEvNT_6ParamsE'
+[20/88] bm128_bn144_st2_prd24_cra232_p3_q3_nc2_sb0_rb0: compiled (60.0s)
+[21/88] bm128_bn144_st2_prd32_cra232_p3_q3_nc2_sb0_rb0: compiled (60.1s)
+[22/88] bm128_bn144_st2_prd24_cra216_p3_q3_nc2_sb0_rb0: compiled (59.8s)
+[23/88] bm128_bn144_st2_prd24_cra224_p3_q3_nc2_sb0_rb0: compiled (60.1s)
+[24/88] bm128_bn144_st2_prd32_cra224_p3_q3_nc2_sb0_rb0: compiled (60.1s)
+[25/88] bm128_bn144_st2_prd24_cra200_p3_q3_nc2_sb0_rb0: compiled (59.9s)
+[26/88] bm128_bn144_st2_prd24_cra208_p3_q3_nc2_sb0_rb0: compiled (61.1s)
+[27/88] bm128_bn144_st2_prd32_cra216_p3_q3_nc2_sb0_rb0: compiled (61.6s)
+[28/88] bm128_bn144_st2_prd32_cra208_p3_q3_nc2_sb0_rb0: compiled (61.8s)
+[29/88] bm256_bn192_st2_prd32_cra232_p5_q2_nc2_sb0_rb0: compiled (65.4s)
+[30/88] bm256_bn192_st2_prd32_cra224_p5_q2_nc2_sb0_rb0: performance warning (65.1s)
+  ptxas info    : (C7512) Potential Performance Loss: wgmma.mma_async instructions are serialized due to insufficient register resources for the function '_ZN7cutlass13device_kernelIN5flash20enable_sm90_or_laterINS1_16FlashAttnFwdSm90INS1_25CollectiveMainloopFwdSm90IXtlN82_GLOBAL__N__098ddb5a_49_bm256_bn192_st2_prd32_cra224_p5_q2_nc2_sb0_rb0_cu_79fa05bf7TConfigELi256ELi192ELi2ELj32ELj224ELi5ELi2ELi2ELi0ELi0EEELi2EN4cute5tupleIJNS7_1CILi1EEESA_SA_EEENS8_IJNS9_ILi256EEENS9_ILi192EEENS9_ILi64EEEEEELi64ENS_6half_tEfNS_4arch4Sm90ELb0ELb0ELb0ELb0ELb0ELb0ELb0ELb1ELb1ELb0ELb0ELb0EEENS1_21CollectiveEpilogueFwdINS8_IJSC_SE_SD_EEESB_SG_SI_Li256ELb0ELb0ELb0ELb0EEENS1_29StaticPersistentTileSchedulerILb0EEEEEEEEEvNT_6ParamsE'
+[31/88] bm256_bn192_st2_prd24_cra224_p5_q2_nc2_sb0_rb0: performance warning (66.9s)
+  ptxas info    : (C7512) Potential Performance Loss: wgmma.mma_async instructions are serialized due to insufficient register resources for the function '_ZN7cutlass13device_kernelIN5flash20enable_sm90_or_laterINS1_16FlashAttnFwdSm90INS1_25CollectiveMainloopFwdSm90IXtlN82_GLOBAL__N__a48ce8cb_49_bm256_bn192_st2_prd24_cra224_p5_q2_nc2_sb0_rb0_cu_79fa05bf7TConfigELi256ELi192ELi2ELj24ELj224ELi5ELi2ELi2ELi0ELi0EEELi2EN4cute5tupleIJNS7_1CILi1EEESA_SA_EEENS8_IJNS9_ILi256EEENS9_ILi192EEENS9_ILi64EEEEEELi64ENS_6half_tEfNS_4arch4Sm90ELb0ELb0ELb0ELb0ELb0ELb0ELb0ELb1ELb1ELb0ELb0ELb0EEENS1_21CollectiveEpilogueFwdINS8_IJSC_SE_SD_EEESB_SG_SI_Li256ELb0ELb0ELb0ELb0EEENS1_29StaticPersistentTileSchedulerILb0EEEEEEEEEvNT_6ParamsE'
+[32/88] bm128_bn144_st2_prd32_cra200_p3_q3_nc2_sb0_rb0: compiled (62.6s)
+[33/88] bm128_bn112_st3_prd32_cra232_p7_q2_nc2_sb0_rb0: compiled (59.0s)
+[34/88] bm128_bn112_st3_prd24_cra224_p7_q2_nc2_sb0_rb0: compiled (59.2s)
+[35/88] bm128_bn112_st3_prd24_cra232_p7_q2_nc2_sb0_rb0: compiled (60.8s)
+[36/88] bm128_bn112_st3_prd32_cra216_p7_q2_nc2_sb0_rb0: compiled (59.3s)
+[37/88] bm64_bn128_st3_prd48_cra256_p0_q1_nc1_sb0_rb0: compiled (57.0s)
+[38/88] bm128_bn112_st3_prd32_cra224_p7_q2_nc2_sb0_rb0: compiled (59.7s)
+[39/88] bm128_bn112_st3_prd24_cra208_p7_q2_nc2_sb0_rb0: compiled (59.6s)
+[40/88] bm128_bn112_st3_prd32_cra208_p7_q2_nc2_sb0_rb0: compiled (60.3s)
+[41/88] bm128_bn112_st3_prd24_cra200_p7_q2_nc2_sb0_rb0: compiled (59.4s)
+[42/88] bm128_bn112_st3_prd24_cra216_p7_q2_nc2_sb0_rb0: compiled (61.1s)
+[43/88] bm64_bn128_st3_prd64_cra256_p0_q1_nc1_sb0_rb0: compiled (58.5s)
+[44/88] bm128_bn176_st1_prd32_cra232_p9_q2_nc2_sb1_rb0: compiled (59.6s)
+[45/88] bm128_bn112_st3_prd32_cra200_p7_q2_nc2_sb0_rb0: compiled (62.0s)
+[46/88] bm128_bn176_st1_prd24_cra232_p9_q2_nc2_sb1_rb0: compiled (60.2s)
+[47/88] bm128_bn176_st1_prd24_cra224_p9_q2_nc2_sb1_rb0: compiled (61.3s)
+[48/88] bm128_bn176_st1_prd32_cra224_p9_q2_nc2_sb1_rb0: compiled (59.5s)
+[49/88] bm128_bn176_st1_prd24_cra216_p9_q2_nc2_sb1_rb0: compiled (59.9s)
+[50/88] bm64_bn176_st2_prd48_cra256_p7_q4_nc1_sb0_rb0: compiled (58.1s)
+[51/88] bm128_bn176_st1_prd32_cra216_p9_q2_nc2_sb1_rb0: compiled (60.4s)
+[52/88] bm128_bn176_st1_prd24_cra208_p9_q2_nc2_sb1_rb0: compiled (60.3s)
+[53/88] bm128_bn176_st1_prd32_cra208_p9_q2_nc2_sb1_rb0: compiled (59.2s)
+[54/88] bm128_bn176_st1_prd24_cra200_p9_q2_nc2_sb1_rb0: compiled (59.4s)
+[55/88] bm64_bn176_st2_prd64_cra256_p7_q4_nc1_sb0_rb0: compiled (58.3s)
+[56/88] bm128_bn176_st1_prd32_cra200_p9_q2_nc2_sb1_rb0: compiled (59.5s)
+[57/88] bm128_bn128_st2_prd48_cra256_p0_q4_nc1_sb0_rb0: compiled (59.3s)
+[58/88] bm128_bn240_st1_prd24_cra232_p11_q0_nc2_sb0_rb1: compiled (58.6s)
+[59/88] bm128_bn240_st1_prd32_cra232_p11_q0_nc2_sb0_rb1: compiled (57.6s)
+[60/88] bm128_bn128_st2_prd64_cra256_p0_q4_nc1_sb0_rb0: compiled (61.3s)
+[61/88] bm128_bn240_st1_prd32_cra224_p11_q0_nc2_sb0_rb1: compiled (59.9s)
+[62/88] bm128_bn240_st1_prd24_cra216_p11_q0_nc2_sb0_rb1: compiled (57.5s)
+[63/88] bm128_bn240_st1_prd24_cra224_p11_q0_nc2_sb0_rb1: compiled (60.9s)
+[64/88] bm128_bn240_st1_prd32_cra216_p11_q0_nc2_sb0_rb1: compiled (57.8s)
+[65/88] bm128_bn240_st1_prd24_cra208_p11_q0_nc2_sb0_rb1: compiled (58.0s)
+[66/88] bm128_bn240_st1_prd32_cra208_p11_q0_nc2_sb0_rb1: compiled (57.4s)
+[67/88] bm128_bn240_st1_prd24_cra200_p11_q0_nc2_sb0_rb1: compiled (57.7s)
+[68/88] bm128_bn240_st1_prd32_cra200_p11_q0_nc2_sb0_rb1: compiled (57.6s)
+[69/88] bm256_bn224_st2_prd24_cra232_p10_q0_nc2_sb1_rb0: compiled (62.1s)
+[70/88] bm64_bn208_st3_prd48_cra256_p9_q0_nc1_sb0_rb0: compiled (56.2s)
+[71/88] bm256_bn224_st2_prd32_cra224_p10_q0_nc2_sb1_rb0: compiled (62.1s)
+[72/88] bm256_bn224_st2_prd32_cra232_p10_q0_nc2_sb1_rb0: compiled (63.0s)
+[73/88] bm64_bn208_st3_prd48_cra256_p5_q0_nc1_sb0_rb1: compiled (56.5s)
+[74/88] bm256_bn224_st2_prd24_cra224_p10_q0_nc2_sb1_rb0: compiled (63.2s)
+[75/88] bm256_bn224_st2_prd24_cra216_p10_q0_nc2_sb1_rb0: performance warning (62.0s)
+  ptxas info    : (C7512) Potential Performance Loss: wgmma.mma_async instructions are serialized due to insufficient register resources for the function '_ZN7cutlass13device_kernelIN5flash20enable_sm90_or_laterINS1_16FlashAttnFwdSm90INS1_25CollectiveMainloopFwdSm90IXtlN83_GLOBAL__N__357d3776_50_bm256_bn224_st2_prd24_cra216_p10_q0_nc2_sb1_rb0_cu_79fa05bf7TConfigELi256ELi224ELi2ELj24ELj216ELi10ELi0ELi2ELi1ELi0EEELi2EN4cute5tupleIJNS7_1CILi1EEESA_SA_EEENS8_IJNS9_ILi256EEENS9_ILi224EEENS9_ILi64EEEEEELi64ENS_6half_tEfNS_4arch4Sm90ELb0ELb0ELb0ELb0ELb0ELb0ELb0ELb1ELb1ELb0ELb0ELb0EEENS1_21CollectiveEpilogueFwdINS8_IJSC_SE_SD_EEESB_SG_SI_Li256ELb0ELb0ELb0ELb0EEENS1_29StaticPersistentTileSchedulerILb0EEEEEEEEEvNT_6ParamsE'
+[76/88] bm64_bn208_st3_prd64_cra256_p5_q0_nc1_sb0_rb1: compiled (56.7s)
+[77/88] bm256_bn224_st2_prd32_cra216_p10_q0_nc2_sb1_rb0: performance warning (62.4s)
+  ptxas info    : (C7512) Potential Performance Loss: wgmma.mma_async instructions are serialized due to insufficient register resources for the function '_ZN7cutlass13device_kernelIN5flash20enable_sm90_or_laterINS1_16FlashAttnFwdSm90INS1_25CollectiveMainloopFwdSm90IXtlN83_GLOBAL__N__b2d89597_50_bm256_bn224_st2_prd32_cra216_p10_q0_nc2_sb1_rb0_cu_79fa05bf7TConfigELi256ELi224ELi2ELj32ELj216ELi10ELi0ELi2ELi1ELi0EEELi2EN4cute5tupleIJNS7_1CILi1EEESA_SA_EEENS8_IJNS9_ILi256EEENS9_ILi224EEENS9_ILi64EEEEEELi64ENS_6half_tEfNS_4arch4Sm90ELb0ELb0ELb0ELb0ELb0ELb0ELb0ELb1ELb1ELb0ELb0ELb0EEENS1_21CollectiveEpilogueFwdINS8_IJSC_SE_SD_EEESB_SG_SI_Li256ELb0ELb0ELb0ELb0EEENS1_29StaticPersistentTileSchedulerILb0EEEEEEEEEvNT_6ParamsE'
+[78/88] bm64_bn208_st3_prd64_cra256_p9_q0_nc1_sb0_rb0: compiled (58.8s)
+[79/88] bm128_bn192_st2_prd48_cra256_p7_q2_nc1_sb0_rb0: compiled (64.0s)
+[80/88] bm128_bn192_st2_prd64_cra256_p7_q2_nc1_sb0_rb0: compiled (64.7s)
+[81/88] bm64_bn112_st3_prd48_cra256_p1_q2_nc1_sb0_rb0: compiled (57.4s)
+[82/88] bm64_bn112_st3_prd64_cra256_p1_q2_nc1_sb0_rb0: compiled (57.7s)
+[83/88] bm128_bn112_st3_prd64_cra256_p5_q1_nc1_sb0_rb0: compiled (63.7s)
+[84/88] bm128_bn112_st3_prd48_cra256_p5_q1_nc1_sb0_rb0: compiled (64.4s)
+[85/88] bm128_bn224_st3_prd48_cra256_p8_q0_nc1_sb0_rb1: compiled (61.0s)
+[86/88] bm128_bn224_st3_prd64_cra256_p8_q0_nc1_sb0_rb1: compiled (60.9s)
+[87/88] bm128_bn224_st2_prd48_cra256_p13_q3_nc1_sb0_rb0: compiled (65.0s)
+[88/88] bm128_bn224_st2_prd64_cra256_p13_q3_nc1_sb0_rb0: compiled (65.4s)
+compiled 82/88 configs successfully
+[1/82] bm192_bn96_st1_prd24_cra160_p1_q2_nc3_sb0_rb0
+  time=13.336 ms, tflops=289.86
+[2/82] bm192_bn96_st1_prd24_cra152_p1_q2_nc3_sb0_rb0
+  time=13.306 ms, tflops=290.51
+[3/82] bm192_bn96_st1_prd40_cra152_p1_q2_nc3_sb0_rb0
+  time=14.310 ms, tflops=270.12
+[4/82] bm192_bn96_st1_prd24_cra144_p1_q2_nc3_sb0_rb0
+  time=13.605 ms, tflops=284.12
+[5/82] bm192_bn96_st1_prd40_cra144_p1_q2_nc3_sb0_rb0
+  time=13.652 ms, tflops=283.14
+[6/82] bm128_bn208_st3_prd24_cra232_p12_q4_nc2_sb0_rb0
+  time=13.897 ms, tflops=278.15
+[7/82] bm128_bn208_st3_prd32_cra232_p12_q4_nc2_sb0_rb0
+  time=13.879 ms, tflops=278.52
+[8/82] bm128_bn208_st3_prd24_cra224_p12_q4_nc2_sb0_rb0
+  time=14.947 ms, tflops=258.61
+[9/82] bm128_bn208_st3_prd32_cra224_p12_q4_nc2_sb0_rb0
+  time=14.343 ms, tflops=269.50
+[10/82] bm128_bn208_st3_prd24_cra216_p12_q4_nc2_sb0_rb0
+  time=14.402 ms, tflops=268.40
+[11/82] bm128_bn208_st3_prd32_cra216_p12_q4_nc2_sb0_rb0
+  time=14.107 ms, tflops=274.02
+[12/82] bm128_bn208_st3_prd24_cra208_p12_q4_nc2_sb0_rb0
+  time=14.277 ms, tflops=270.74
+[13/82] bm128_bn208_st3_prd32_cra208_p12_q4_nc2_sb0_rb0
+  time=13.936 ms, tflops=277.38
+[14/82] bm128_bn208_st3_prd24_cra200_p12_q4_nc2_sb0_rb0
+  time=13.889 ms, tflops=278.31
+[15/82] bm128_bn208_st3_prd32_cra200_p12_q4_nc2_sb0_rb0
+  time=13.970 ms, tflops=276.69
+[16/82] bm256_bn192_st2_prd24_cra232_p5_q2_nc2_sb0_rb0
+  time=15.552 ms, tflops=248.55
+[17/82] bm256_bn192_st2_prd32_cra232_p5_q2_nc2_sb0_rb0
+  time=15.591 ms, tflops=247.93
+[18/82] bm192_bn144_st2_prd24_cra160_p2_q0_nc3_sb1_rb0
+  time=14.798 ms, tflops=261.21
+[19/82] bm128_bn144_st2_prd24_cra232_p3_q3_nc2_sb0_rb0
+  time=14.884 ms, tflops=259.71
+[20/82] bm128_bn144_st2_prd32_cra232_p3_q3_nc2_sb0_rb0
+  time=14.864 ms, tflops=260.05
+[21/82] bm128_bn144_st2_prd24_cra224_p3_q3_nc2_sb0_rb0
+  time=14.893 ms, tflops=259.56
+[22/82] bm128_bn144_st2_prd32_cra224_p3_q3_nc2_sb0_rb0
+  time=14.972 ms, tflops=258.18
+[23/82] bm128_bn144_st2_prd24_cra216_p3_q3_nc2_sb0_rb0
+  time=15.324 ms, tflops=252.26
+[24/82] bm128_bn144_st2_prd32_cra216_p3_q3_nc2_sb0_rb0
+  time=14.953 ms, tflops=258.50
+[25/82] bm128_bn144_st2_prd24_cra208_p3_q3_nc2_sb0_rb0
+  time=14.859 ms, tflops=260.14
+[26/82] bm128_bn144_st2_prd32_cra208_p3_q3_nc2_sb0_rb0
+  time=14.860 ms, tflops=260.13
+[27/82] bm128_bn144_st2_prd24_cra200_p3_q3_nc2_sb0_rb0
+  time=15.640 ms, tflops=247.14
+[28/82] bm128_bn144_st2_prd32_cra200_p3_q3_nc2_sb0_rb0
+  time=15.179 ms, tflops=254.66
+[29/82] bm128_bn112_st3_prd24_cra232_p7_q2_nc2_sb0_rb0
+  time=16.361 ms, tflops=236.27
+[30/82] bm128_bn112_st3_prd32_cra232_p7_q2_nc2_sb0_rb0
+  time=16.922 ms, tflops=228.43
+[31/82] bm128_bn112_st3_prd24_cra224_p7_q2_nc2_sb0_rb0
+  time=16.065 ms, tflops=240.62
+[32/82] bm128_bn112_st3_prd32_cra224_p7_q2_nc2_sb0_rb0
+  time=16.851 ms, tflops=229.39
+[33/82] bm128_bn112_st3_prd24_cra216_p7_q2_nc2_sb0_rb0
+  time=16.313 ms, tflops=236.95
+[34/82] bm128_bn112_st3_prd32_cra216_p7_q2_nc2_sb0_rb0
+  time=16.663 ms, tflops=231.99
+[35/82] bm128_bn112_st3_prd24_cra208_p7_q2_nc2_sb0_rb0
+  time=16.451 ms, tflops=234.97
+[36/82] bm128_bn112_st3_prd32_cra208_p7_q2_nc2_sb0_rb0
+  time=16.844 ms, tflops=229.49
+[37/82] bm128_bn112_st3_prd24_cra200_p7_q2_nc2_sb0_rb0
+  time=16.291 ms, tflops=237.27
+[38/82] bm128_bn112_st3_prd32_cra200_p7_q2_nc2_sb0_rb0
+  time=16.666 ms, tflops=231.94
+[39/82] bm64_bn128_st3_prd48_cra256_p0_q1_nc1_sb0_rb0
+  time=16.877 ms, tflops=229.04
+[40/82] bm64_bn128_st3_prd64_cra256_p0_q1_nc1_sb0_rb0
+  time=16.895 ms, tflops=228.79
+[41/82] bm128_bn176_st1_prd24_cra232_p9_q2_nc2_sb1_rb0
+  time=17.640 ms, tflops=219.13
+[42/82] bm128_bn176_st1_prd32_cra232_p9_q2_nc2_sb1_rb0
+  time=17.639 ms, tflops=219.15
+[43/82] bm128_bn176_st1_prd24_cra224_p9_q2_nc2_sb1_rb0
+  time=17.565 ms, tflops=220.07
+[44/82] bm128_bn176_st1_prd32_cra224_p9_q2_nc2_sb1_rb0
+  time=17.662 ms, tflops=218.86
+[45/82] bm128_bn176_st1_prd24_cra216_p9_q2_nc2_sb1_rb0
+  time=17.571 ms, tflops=219.99
+[46/82] bm128_bn176_st1_prd32_cra216_p9_q2_nc2_sb1_rb0
+  time=17.608 ms, tflops=219.53
+[47/82] bm128_bn176_st1_prd24_cra208_p9_q2_nc2_sb1_rb0
+  time=17.611 ms, tflops=219.50
+[48/82] bm128_bn176_st1_prd32_cra208_p9_q2_nc2_sb1_rb0
+  time=17.438 ms, tflops=221.67
+[49/82] bm128_bn176_st1_prd24_cra200_p9_q2_nc2_sb1_rb0
+  time=17.820 ms, tflops=216.92
+[50/82] bm128_bn176_st1_prd32_cra200_p9_q2_nc2_sb1_rb0
+  time=17.857 ms, tflops=216.47
+[51/82] bm64_bn176_st2_prd48_cra256_p7_q4_nc1_sb0_rb0
+  time=18.311 ms, tflops=211.10
+[52/82] bm64_bn176_st2_prd64_cra256_p7_q4_nc1_sb0_rb0
+  time=18.061 ms, tflops=214.03
+[53/82] bm128_bn128_st2_prd48_cra256_p0_q4_nc1_sb0_rb0
+  time=18.392 ms, tflops=210.17
+[54/82] bm128_bn128_st2_prd64_cra256_p0_q4_nc1_sb0_rb0
+  time=18.418 ms, tflops=209.87
+[55/82] bm128_bn240_st1_prd24_cra232_p11_q0_nc2_sb0_rb1
+  time=19.412 ms, tflops=199.13
+[56/82] bm128_bn240_st1_prd32_cra232_p11_q0_nc2_sb0_rb1
+  time=19.480 ms, tflops=198.44
+[57/82] bm128_bn240_st1_prd24_cra224_p11_q0_nc2_sb0_rb1
+  time=20.235 ms, tflops=191.03
+[58/82] bm128_bn240_st1_prd32_cra224_p11_q0_nc2_sb0_rb1
+  time=20.206 ms, tflops=191.30
+[59/82] bm128_bn240_st1_prd24_cra216_p11_q0_nc2_sb0_rb1
+  time=20.676 ms, tflops=186.96
+[60/82] bm128_bn240_st1_prd32_cra216_p11_q0_nc2_sb0_rb1
+  time=20.674 ms, tflops=186.97
+[61/82] bm128_bn240_st1_prd24_cra208_p11_q0_nc2_sb0_rb1
+  time=20.772 ms, tflops=186.09
+[62/82] bm128_bn240_st1_prd32_cra208_p11_q0_nc2_sb0_rb1
+  time=20.812 ms, tflops=185.73
+[63/82] bm128_bn240_st1_prd24_cra200_p11_q0_nc2_sb0_rb1
+  time=20.520 ms, tflops=188.38
+[64/82] bm128_bn240_st1_prd32_cra200_p11_q0_nc2_sb0_rb1
+  time=20.472 ms, tflops=188.81
+[65/82] bm256_bn224_st2_prd24_cra232_p10_q0_nc2_sb1_rb0
+  time=20.642 ms, tflops=187.26
+[66/82] bm256_bn224_st2_prd32_cra232_p10_q0_nc2_sb1_rb0
+  time=20.590 ms, tflops=187.73
+[67/82] bm256_bn224_st2_prd24_cra224_p10_q0_nc2_sb1_rb0
+  time=23.502 ms, tflops=164.48
+[68/82] bm256_bn224_st2_prd32_cra224_p10_q0_nc2_sb1_rb0
+  time=23.301 ms, tflops=165.89
+[69/82] bm128_bn192_st2_prd48_cra256_p7_q2_nc1_sb0_rb0
+  time=19.309 ms, tflops=200.20
+[70/82] bm128_bn192_st2_prd64_cra256_p7_q2_nc1_sb0_rb0
+  time=19.259 ms, tflops=200.71
+[71/82] bm64_bn208_st3_prd48_cra256_p9_q0_nc1_sb0_rb0
+  time=19.990 ms, tflops=193.37
+[72/82] bm64_bn208_st3_prd64_cra256_p9_q0_nc1_sb0_rb0
+  time=20.000 ms, tflops=193.27
+[73/82] bm64_bn208_st3_prd48_cra256_p5_q0_nc1_sb0_rb1
+  time=19.623 ms, tflops=196.99
+[74/82] bm64_bn208_st3_prd64_cra256_p5_q0_nc1_sb0_rb1
+  time=19.622 ms, tflops=197.00
+[75/82] bm64_bn112_st3_prd48_cra256_p1_q2_nc1_sb0_rb0
+  time=20.296 ms, tflops=190.45
+[76/82] bm64_bn112_st3_prd64_cra256_p1_q2_nc1_sb0_rb0
+  time=20.265 ms, tflops=190.75
+[77/82] bm128_bn112_st3_prd48_cra256_p5_q1_nc1_sb0_rb0
+  time=22.206 ms, tflops=174.07
+[78/82] bm128_bn112_st3_prd64_cra256_p5_q1_nc1_sb0_rb0
+  time=22.220 ms, tflops=173.96
+[79/82] bm128_bn224_st2_prd48_cra256_p13_q3_nc1_sb0_rb0
+  time=23.079 ms, tflops=167.49
+[80/82] bm128_bn224_st2_prd64_cra256_p13_q3_nc1_sb0_rb0
+  time=23.048 ms, tflops=167.72
+[81/82] bm128_bn224_st3_prd48_cra256_p8_q0_nc1_sb0_rb1
+  time=23.121 ms, tflops=167.19
+[82/82] bm128_bn224_st3_prd64_cra256_p8_q0_nc1_sb0_rb1
+  time=23.110 ms, tflops=167.27
+final / full register usage: 19 configs, register-usage-level=10
+CUDA sources: 0 generated, 19 cached
++ cmake -Wno-dev -S /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cxx-tests/tune/src/test_b1_h16_s30720_d64_fp16_noncausal/build/project_rl10 -B /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cxx-tests/tune/src/test_b1_h16_s30720_d64_fp16_noncausal/build/rl10 -DCMAKE_BUILD_TYPE=Release -DCMAKE_CUDA_ARCHITECTURES=90a
+-- The CXX compiler identification is GNU 11.4.0
+-- The CUDA compiler identification is NVIDIA 12.8.61 with host compiler GNU 11.4.0
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /usr/bin/c++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Detecting CUDA compiler ABI info
+-- Detecting CUDA compiler ABI info - done
+-- Check for working CUDA compiler: /usr/local/cuda/bin/nvcc - skipped
+-- Detecting CUDA compile features
+-- Detecting CUDA compile features - done
+-- Hopper root dir: /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper
+-- FA Python env dir: /home/xiebaokang/miniconda3/envs/torch
+-- Found Python lib dir: /home/xiebaokang/miniconda3/envs/torch/lib/python3.10
+-- Found CUDA: /usr/local/cuda (found version "12.8") 
+-- Found CUDAToolkit: /usr/local/cuda/include (found version "12.8.61")
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD - Success
+-- Found Threads: TRUE
+-- PyTorch: CUDA detected: 12.8
+-- PyTorch: CUDA nvcc is: /usr/local/cuda/bin/nvcc
+-- PyTorch: CUDA toolkit directory: /usr/local/cuda
+-- PyTorch: Header version is: 12.8
+-- Found Python: /home/xiebaokang/miniconda3/envs/torch/bin/python3.10 (found version "3.10.19") found components: Interpreter
+CMake Warning at /home/xiebaokang/miniconda3/envs/torch/lib/python3.10/site-packages/torch/share/cmake/Caffe2/public/cuda.cmake:140 (message):
+  Failed to compute shorthash for libnvrtc.so
+Call Stack (most recent call first):
+  /home/xiebaokang/miniconda3/envs/torch/lib/python3.10/site-packages/torch/share/cmake/Caffe2/Caffe2Config.cmake:86 (include)
+  /home/xiebaokang/miniconda3/envs/torch/lib/python3.10/site-packages/torch/share/cmake/Torch/TorchConfig.cmake:68 (find_package)
+  /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cxx-tests/cmake/flashVenv.cmake:32 (find_package)
+  CMakeLists.txt:7 (include)
+
+
+-- Could NOT find nvtx3 (missing: nvtx3_dir) 
+CMake Warning at /home/xiebaokang/miniconda3/envs/torch/lib/python3.10/site-packages/torch/share/cmake/Caffe2/public/cuda.cmake:184 (message):
+  Cannot find NVTX3, find old NVTX instead
+Call Stack (most recent call first):
+  /home/xiebaokang/miniconda3/envs/torch/lib/python3.10/site-packages/torch/share/cmake/Caffe2/Caffe2Config.cmake:86 (include)
+  /home/xiebaokang/miniconda3/envs/torch/lib/python3.10/site-packages/torch/share/cmake/Torch/TorchConfig.cmake:68 (find_package)
+  /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cxx-tests/cmake/flashVenv.cmake:32 (find_package)
+  CMakeLists.txt:7 (include)
+
+
+-- USE_CUDNN is set to 0. Compiling without cuDNN support
+-- USE_CUSPARSELT is set to 0. Compiling without cuSPARSELt support
+-- USE_CUDSS is set to 0. Compiling without cuDSS support
+-- USE_CUFILE is set to 0. Compiling without cuFile support
+-- Added CUDA NVCC flags for: -gencode;arch=compute_90a,code=sm_90a
+CMake Warning at /home/xiebaokang/miniconda3/envs/torch/lib/python3.10/site-packages/torch/share/cmake/Torch/TorchConfig.cmake:22 (message):
+  static library kineto_LIBRARY-NOTFOUND not found.
+Call Stack (most recent call first):
+  /home/xiebaokang/miniconda3/envs/torch/lib/python3.10/site-packages/torch/share/cmake/Torch/TorchConfig.cmake:121 (append_torchlib_if_found)
+  /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cxx-tests/cmake/flashVenv.cmake:32 (find_package)
+  CMakeLists.txt:7 (include)
+
+
+-- Found Torch: /home/xiebaokang/miniconda3/envs/torch/lib/python3.10/site-packages/torch/lib/libtorch.so
+-- Found Python: /home/xiebaokang/miniconda3/envs/torch/bin/python3.10 (found version "3.10.19") found components: Interpreter Development Development.Module Development.Embed
+-- CUTLASS include dir: /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cutlass/include
+-- Custom API dir: /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cxx-tests/custom_api
+-- Configuring done (3.0s)
+-- Generating done (0.1s)
+-- Build files have been written to: /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cxx-tests/tune/src/test_b1_h16_s30720_d64_fp16_noncausal/build/rl10
++ cmake --build /home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cxx-tests/tune/src/test_b1_h16_s30720_d64_fp16_noncausal/build/rl10 --target fa3_prepare_scheduler --parallel 1
+[ 50%] Building CUDA object CMakeFiles/fa3_prepare_scheduler.dir/home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/flash_prepare_scheduler.cu.o
+[100%] Linking CUDA shared library libfa3_prepare_scheduler.so
+[100%] Built target fa3_prepare_scheduler
+building 19 config target(s) with 16 parallel worker(s)
+[1/19] bm64_bn128_st3_prd56_cra256_p0_q1_nc1_sb0_rb0: compiled (56.8s)
+[2/19] bm64_bn112_st3_prd56_cra256_p1_q2_nc1_sb0_rb0: compiled (56.8s)
+[3/19] bm64_bn176_st2_prd56_cra256_p7_q4_nc1_sb0_rb0: compiled (57.1s)
+[4/19] bm64_bn208_st3_prd56_cra256_p9_q0_nc1_sb0_rb0: compiled (57.4s)
+[5/19] bm128_bn240_st1_prd24_cra240_p11_q0_nc2_sb0_rb1: compiled (57.8s)
+[6/19] bm192_bn144_st2_prd32_cra160_p2_q0_nc3_sb1_rb0: compiled (58.5s)
+[7/19] bm192_bn96_st1_prd24_cra152_p1_q2_nc3_sb0_rb0: compiled (58.6s)
+[8/19] bm128_bn128_st2_prd56_cra256_p0_q4_nc1_sb0_rb0: compiled (59.0s)
+[9/19] bm128_bn112_st3_prd24_cra240_p7_q2_nc2_sb0_rb0: compiled (59.2s)
+[10/19] bm64_bn208_st3_prd56_cra256_p5_q0_nc1_sb0_rb1: compiled (59.3s)
+[11/19] bm128_bn208_st3_prd32_cra232_p12_q4_nc2_sb0_rb0: compiled (59.6s)
+[12/19] bm128_bn176_st1_prd32_cra208_p9_q2_nc2_sb1_rb0: compiled (60.0s)
+[13/19] bm128_bn144_st2_prd24_cra240_p3_q3_nc2_sb0_rb0: compiled (60.2s)
+[14/19] bm256_bn224_st2_prd24_cra240_p10_q0_nc2_sb1_rb0: compiled (61.4s)
+[15/19] bm128_bn192_st2_prd56_cra256_p7_q2_nc1_sb0_rb0: compiled (63.0s)
+[16/19] bm256_bn192_st2_prd24_cra240_p5_q2_nc2_sb0_rb0: compiled (66.4s)
+[17/19] bm128_bn224_st3_prd56_cra256_p8_q0_nc1_sb0_rb1: compiled (61.0s)
+[18/19] bm128_bn112_st3_prd56_cra256_p5_q1_nc1_sb0_rb0: compiled (63.2s)
+[19/19] bm128_bn224_st2_prd56_cra256_p13_q3_nc1_sb0_rb0: compiled (64.6s)
+compiled 19/19 configs successfully
+[1/19] bm192_bn96_st1_prd24_cra152_p1_q2_nc3_sb0_rb0
+  time=13.366 ms, tflops=289.20
+[2/19] bm128_bn208_st3_prd32_cra232_p12_q4_nc2_sb0_rb0
+  time=13.800 ms, tflops=280.10
+[3/19] bm256_bn192_st2_prd24_cra240_p5_q2_nc2_sb0_rb0
+  time=14.323 ms, tflops=269.88
+[4/19] bm192_bn144_st2_prd32_cra160_p2_q0_nc3_sb1_rb0
+  time=14.544 ms, tflops=265.78
+[5/19] bm128_bn144_st2_prd24_cra240_p3_q3_nc2_sb0_rb0
+  time=14.683 ms, tflops=263.26
+[6/19] bm128_bn112_st3_prd24_cra240_p7_q2_nc2_sb0_rb0
+  time=16.095 ms, tflops=240.17
+[7/19] bm64_bn128_st3_prd56_cra256_p0_q1_nc1_sb0_rb0
+  time=16.665 ms, tflops=231.95
+[8/19] bm128_bn176_st1_prd32_cra208_p9_q2_nc2_sb1_rb0
+  time=16.976 ms, tflops=227.70
+[9/19] bm64_bn176_st2_prd56_cra256_p7_q4_nc1_sb0_rb0
+  time=18.196 ms, tflops=212.43
+[10/19] bm128_bn128_st2_prd56_cra256_p0_q4_nc1_sb0_rb0
+  time=18.054 ms, tflops=214.11
+[11/19] bm128_bn240_st1_prd24_cra240_p11_q0_nc2_sb0_rb1
+  time=18.315 ms, tflops=211.05
+[12/19] bm256_bn224_st2_prd24_cra240_p10_q0_nc2_sb1_rb0
+  time=18.553 ms, tflops=208.35
+[13/19] bm128_bn192_st2_prd56_cra256_p7_q2_nc1_sb0_rb0
+  time=18.998 ms, tflops=203.46
+[14/19] bm64_bn208_st3_prd56_cra256_p9_q0_nc1_sb0_rb0
+  time=19.598 ms, tflops=197.24
+[15/19] bm64_bn208_st3_prd56_cra256_p5_q0_nc1_sb0_rb1
+  time=19.212 ms, tflops=201.20
+[16/19] bm64_bn112_st3_prd56_cra256_p1_q2_nc1_sb0_rb0
+  time=20.039 ms, tflops=192.89
+[17/19] bm128_bn112_st3_prd56_cra256_p5_q1_nc1_sb0_rb0
+  time=21.810 ms, tflops=177.23
+[18/19] bm128_bn224_st2_prd56_cra256_p13_q3_nc1_sb0_rb0
+  time=22.846 ms, tflops=169.19
+[19/19] bm128_bn224_st3_prd56_cra256_p8_q0_nc1_sb0_rb1
+  time=22.961 ms, tflops=168.35

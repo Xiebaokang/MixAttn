@@ -14,6 +14,7 @@ class TConfig:
     q_reg_k_tiles: int
     num_consumer: int
     use_scheduler_barrier: int
+    rescale_o_before_gemm: int
 
     def name(self) -> str:
         return (
@@ -21,6 +22,7 @@ class TConfig:
             f"_prd{self.producer_reg_dealloc}_cra{self.consumer_reg_alloc}"
             f"_p{self.p_smem_k_tiles}_q{self.q_reg_k_tiles}"
             f"_nc{self.num_consumer}_sb{self.use_scheduler_barrier}"
+            f"_rb{self.rescale_o_before_gemm}"
         )
 
     def base_name(self) -> str:
@@ -42,6 +44,8 @@ class BenchResult:
     exec_file: Path
     time_ms: float
     tflops: float
+    smem_size: int
+    reg_size: int
 
 class Mode(Enum):
     RADICAL = 0

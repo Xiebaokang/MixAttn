@@ -7,8 +7,18 @@ from utils import TConfig, Mode
 
 MMA_M = 64
 MAX_MMA_N = 256
+# Hopper TMA tensor-map box dimensions are limited to 256 elements.  The
+# current Q-load and O-store descriptors cover the complete logical BM tile in
+# one transaction, so BM must remain within that limit until those transfers
+# are split along M.
+MAX_TMA_M = 256
 WARP_GROUP_THREADS = 128
 MIN_PRODUCER_REGISTERS = 24
+REGISTER_BYTES = 4
+OUTPUT_ELEMENT_BYTES = 2
+# Covers pipeline state, descriptors, indices and other scalar consumer state
+# that is not represented by the tensor-fragment formulas below.
+CONSUMER_CONTROL_REGISTER_RESERVE = 8
 
 # Stage-3 alternatives. Base allocations are deliberately omitted because
 # tune.py compares these new results against the retained stage-2 winner.
@@ -18,7 +28,6 @@ REGISTER_ALLOCATION = {
         (64, 256),
     ),
     2: (
-        (32, 240),
         (24, 232),
         (32, 232),
         (24, 224),
@@ -128,6 +137,7 @@ def _smem_size_bytes(
     elem_width: int,
     p_smem_k_tiles: int,
     q_reg_k_tiles: int,
+    num_consumer: int,
 ) -> int:
     """Mirror FlashAttnFwdSm90 SharedStorage for the fixed-length MIX path."""
     mma_k = _mma_k(elem_width)
@@ -163,7 +173,9 @@ def _smem_size_bytes(
     add_array(bm * q_smem_cols * elem_width, 128)     # smem_q
     add_array(bn * hd * stage * elem_width, 128)      # smem_k
     offset += 1                                       # zero-sized smem_qv member
-    add_array(bm * p_smem_cols * elem_width, p_alignment)
+    compute_m = MMA_M * num_consumer
+    p_block_m = bm if bm == compute_m else compute_m
+    add_array(p_block_m * p_smem_cols * elem_width, p_alignment)
     mainloop_storage = _align_up(offset, mainloop_alignment)
 
     output_storage = _align_up(bm * hd * 2, 128)      # FP8 output is BF16
@@ -182,7 +194,7 @@ def _smem_size_bytes(
     )
 
 
-def _consumer_registers_per_thread(
+def _consumer_register_bytes(
     bm: int,
     hd: int,
     bn: int,
@@ -192,35 +204,117 @@ def _consumer_registers_per_thread(
     num_consumer: int,
     mode: Mode,
 ) -> int:
-    """Estimate source-visible 32-bit fragment registers per consumer thread.
+    """Estimate aggregate consumer register storage in bytes.
 
-    KEEP charges the complete converted P fragment. RADICAL follows the live
-    C++ implementation and charges only the persistent register suffix after
-    the P shared-memory prefix.
+    KEEP is deliberately conservative: it adds every modeled fragment and
+    temporary even when their live ranges do not overlap.  RADICAL models the
+    peak of the mainloop and epilogue live ranges.  The latter can still be
+    lower than ptxas allocation because compiler scheduling and inlining are
+    not visible to this source-level model.
     """
     num_mma_threads = WARP_GROUP_THREADS * num_consumer
-    acc_o_elements = bm * hd
-    acc_s_elements = bm * bn
-    if acc_o_elements % num_mma_threads != 0:
-        raise ValueError("BM * HD must be divisible by NumMmaThreads")
-    if acc_s_elements % num_mma_threads != 0:
-        raise ValueError("BM * BN must be divisible by NumMmaThreads")
+    compute_m = MMA_M * num_consumer
+    if bm < compute_m or bm % compute_m != 0:
+        raise ValueError("BM must be a positive multiple of ComputeM")
 
-    acc_o = acc_o_elements // num_mma_threads
-    acc_s = acc_s_elements // num_mma_threads
     mma_k = _mma_k(elem_width)
-    p_reg_cols = bn - p_smem_k_tiles * mma_k
-    if p_reg_cols < 0:
+    p_reg_k_tiles = bn // mma_k - p_smem_k_tiles
+    if p_reg_k_tiles < 0:
         raise ValueError("P SMEM tiles exceed the PV K dimension")
-    p_live_cols = p_reg_cols if mode is Mode.RADICAL else bn
-    p_elements = bm * p_live_cols // num_mma_threads
-    q_reg_elements = MMA_M * (q_reg_k_tiles * mma_k) // WARP_GROUP_THREADS
-    p_regs = _ceil_div(p_elements * elem_width, 4)
-    q_regs = _ceil_div(q_reg_elements * elem_width, 4)
 
-    k_n_rows = 2 * (2 * bm // num_mma_threads)
-    softmax_peak_regs = 4 * k_n_rows + 1
-    return acc_o + acc_s + p_regs + q_regs + softmax_peak_regs
+    def fragment_regs(elements: int, element_bytes: int) -> int:
+        return _ceil_div(
+            elements * element_bytes,
+            num_mma_threads * REGISTER_BYTES,
+        )
+
+    # Persistent mainloop fragments.
+    acc_o_regs = fragment_regs(bm * hd, REGISTER_BYTES)
+    q_regs = fragment_regs(
+        bm * q_reg_k_tiles * mma_k,
+        elem_width,
+    )
+    softmax_rows = 4 * bm // num_mma_threads
+    softmax_slice_rows = softmax_rows // (bm // compute_m)
+    softmax_state_regs = 2 * softmax_rows       # row_max + row_sum
+
+    # One ComputeM slice is processed at a time. tSrS is FP32. The converted
+    # P suffix is persistent until its PV WGMMA completes. A SMEM P prefix is
+    # converted one MMA-K tile at a time into a short-lived register fragment.
+    acc_s_regs = fragment_regs(compute_m * bn, REGISTER_BYTES)
+    p_suffix_regs = fragment_regs(
+        compute_m * p_reg_k_tiles * mma_k,
+        elem_width,
+    )
+    p_prefix_temp_regs = (
+        fragment_regs(compute_m * mma_k, elem_width)
+        if p_smem_k_tiles > 0
+        else 0
+    )
+
+    # max_get_scale can hold the returned scale and the previous-max copy.
+    # Both cover one M repeat, not the complete logical BM tile.
+    softmax_temp_regs = 2 * softmax_slice_rows
+
+    # The epilogue converts FP32 O to FP16/BF16 before R2S. FP8 attention also
+    # writes BF16, hence OUTPUT_ELEMENT_BYTES is independent of elem_width.
+    output_fragment_regs = fragment_regs(
+        bm * hd,
+        OUTPUT_ELEMENT_BYTES,
+    )
+    control_regs = CONSUMER_CONTROL_REGISTER_RESERVE
+
+    if mode is Mode.KEEP:
+        registers_per_thread = (
+            control_regs
+            + acc_o_regs
+            + q_regs
+            + softmax_state_regs
+            + acc_s_regs
+            + p_suffix_regs
+            + p_prefix_temp_regs
+            + softmax_temp_regs
+            + output_fragment_regs
+        )
+    else:
+        persistent_mainloop_regs = (
+            control_regs + acc_o_regs + q_regs + softmax_state_regs
+        )
+        # QK(current), PV(previous), and softmax(current) overlap in the
+        # repeated-M steady state.
+        qk_pv_softmax_peak = (
+            persistent_mainloop_regs
+            + acc_s_regs
+            + p_suffix_regs
+            + softmax_temp_regs
+        )
+        # After the previous PV drains, the current P is materialized. Prefix
+        # conversion and suffix conversion have disjoint source-level lives.
+        p_materialize_peak = (
+            persistent_mainloop_regs
+            + acc_s_regs
+            + max(p_prefix_temp_regs, p_suffix_regs)
+            + softmax_slice_rows
+        )
+        # O and converted O overlap until R2S. The next RS-Q prefetch starts
+        # afterwards, so Q is intentionally absent from this phase.
+        epilogue_convert_peak = (
+            control_regs
+            + acc_o_regs
+            + output_fragment_regs
+            + softmax_rows
+        )
+        epilogue_q_prefetch_peak = control_regs + q_regs + softmax_rows
+        registers_per_thread = max(
+            qk_pv_softmax_peak,
+            p_materialize_peak,
+            epilogue_convert_peak,
+            epilogue_q_prefetch_peak,
+        )
+
+    # setmaxnreg allocations and tuning alternatives are 8-register aligned.
+    registers_per_thread = _align_up(registers_per_thread, 8)
+    return registers_per_thread * num_mma_threads * REGISTER_BYTES
 
 
 def _producer_registers_per_thread() -> int:
@@ -234,19 +328,19 @@ def _producer_registers_per_thread() -> int:
     return MIN_PRODUCER_REGISTERS
 
 
-def _allocated_registers_per_cta(
+def _allocated_register_bytes_per_cta(
     producer_reg_dealloc: int,
     consumer_reg_alloc: int,
     num_consumer: int,
 ) -> int:
-    return WARP_GROUP_THREADS * (
+    return REGISTER_BYTES * WARP_GROUP_THREADS * (
         producer_reg_dealloc + num_consumer * consumer_reg_alloc
     )
 
 
 def _allocation_is_valid(
     *,
-    consumer_required: int,
+    consumer_required_bytes: int,
     producer_reg_dealloc: int,
     consumer_reg_alloc: int,
     num_consumer: int,
@@ -257,9 +351,12 @@ def _allocation_is_valid(
         return False
     if _producer_registers_per_thread() > producer_reg_dealloc:
         return False
-    if consumer_required > consumer_reg_alloc:
+    consumer_allocated_bytes = (
+        consumer_reg_alloc * WARP_GROUP_THREADS * num_consumer * REGISTER_BYTES
+    )
+    if consumer_required_bytes > consumer_allocated_bytes:
         return False
-    return _allocated_registers_per_cta(
+    return _allocated_register_bytes_per_cta(
         producer_reg_dealloc, consumer_reg_alloc, num_consumer
     ) <= reg_limit
 
@@ -280,12 +377,13 @@ def mix_wgmma_base_configs(
     elem_width: int = 2,
     causal: bool = False,
     smem_limit: int = 232_448,
-    reg_limit: int = 65_536,
+    reg_limit: int = 262_144,
+    bn_rate: float = 0.4,
     num_consumer_limit: tuple[int, int] = (1, 4),
     stage_limit: tuple[int, int] = (1, 3),
     mode: Mode = Mode.RADICAL,
 ) -> list[TConfig]:
-    """Generate stage-1 structures using the fixed base register allocation."""
+    """Generate base structures, including repeated-M MIX-WGMMA mappings."""
     _validate_common(HD, elem_width, reg_limit, mode)
     if not isinstance(causal, bool):
         raise TypeError("causal must be bool")
@@ -301,75 +399,107 @@ def mix_wgmma_base_configs(
     del causal  # causal/non-causal schedulers have equal SharedStorage size
     mma_k = _mma_k(elem_width)
     q_total_tiles = HD // mma_k
+    # The custom tuning API fixes V_colmajor=false and MIX-WGMMA fixes
+    # IntraWGOverlap=true, so this is the current C++ default heuristic:
+    # HD > 128 && (!Is_FP8 || V_colmajor) && IntraWGOverlap.
+    default_rescale_o_before_gemm = int(HD > 128 and elem_width != 1)
     configs: list[TConfig] = []
 
     for num_consumer in range(num_consumer_lower, num_consumer_upper + 1):
-        bm = MMA_M * num_consumer
         producer_reg_dealloc, consumer_reg_alloc = (
             BASE_REGISTER_ALLOCATION[num_consumer]
         )
-        if _allocated_registers_per_cta(
+        if _allocated_register_bytes_per_cta(
             producer_reg_dealloc, consumer_reg_alloc, num_consumer
         ) > reg_limit:
             continue
 
-        for stage in range(stage_lower, stage_upper + 1):
-            staged_tensor_count = 3 if elem_width == 1 else 2
-            kv_bytes_per_bn = staged_tensor_count * HD * stage * elem_width
-            bn_max = min(
-                MAX_MMA_N,
-                smem_limit // kv_bytes_per_bn // mma_k * mma_k,
-            )
-            for bn in range(mma_k, bn_max + 1, mma_k):
-                # FP8 row-major V uses the transpose path. For non-64-aligned
-                # HD, its current transpose layout requires BN % 64 == 0.
-                if elem_width == 1 and HD % 64 != 0 and bn % 64 != 0:
-                    continue
+        compute_m = MMA_M * num_consumer
+        # RepeatM is derived from BM, rather than being an independent tuning
+        # parameter.  These are necessary upper bounds: every candidate keeps
+        # a BM x HD output accumulator in registers and a BM x HD output tile
+        # in shared memory.  The exact resource models below reject candidates
+        # that exceed the remaining S/P/Q/K/V requirements.
+        consumer_register_bytes = (
+            consumer_reg_alloc * WARP_GROUP_THREADS * num_consumer
+            * REGISTER_BYTES
+        )
+        bm_reg_upper = consumer_register_bytes // (HD * REGISTER_BYTES)
+        bm_smem_upper = smem_limit // (HD * 2)
+        bm_upper = min(bm_reg_upper, bm_smem_upper, MAX_TMA_M)
 
-                if HD == 64 and bn < 128 or HD == 128 and bn < 128 or HD == 256 and bn < 64:
-                    continue
+        for bm in range(compute_m, bm_upper + 1, compute_m):
+            # RepeatM==1 is the original MIX-WGMMA mapping. Larger values keep
+            # the same consumer warpgroup count and assign each warpgroup
+            # multiple logical 64-row Q slices while K/V remains resident.
+            for stage in range(stage_lower, stage_upper + 1):
+                staged_tensor_count = 3 if elem_width == 1 else 2
+                kv_bytes_per_bn = staged_tensor_count * HD * stage * elem_width
+                bn_max = min(
+                    MAX_MMA_N,
+                    smem_limit // kv_bytes_per_bn // mma_k * mma_k,
+                )
 
-                p_total_tiles = bn // mma_k
-                for p_smem_k_tiles in range(p_total_tiles + 1):
-                    for q_reg_k_tiles in range(q_total_tiles + 1):
-                        smem_size = _smem_size_bytes(
-                            bm, bn, HD, stage, elem_width,
-                            p_smem_k_tiles, q_reg_k_tiles,
-                        )
-                        if smem_size > smem_limit:
-                            continue
-                        consumer_required = _consumer_registers_per_thread(
-                            bm, HD, bn, elem_width, p_smem_k_tiles,
-                            q_reg_k_tiles, num_consumer, mode,
-                        )
-                        if not _allocation_is_valid(
-                            consumer_required=consumer_required,
-                            producer_reg_dealloc=producer_reg_dealloc,
-                            consumer_reg_alloc=consumer_reg_alloc,
-                            num_consumer=num_consumer,
-                            reg_limit=reg_limit,
-                        ):
-                            continue
-                        configs.append(TConfig(
-                            kBlockM=bm,
-                            kBlockN=bn,
-                            kStage=stage,
-                            producer_reg_dealloc=producer_reg_dealloc,
-                            consumer_reg_alloc=consumer_reg_alloc,
-                            p_smem_k_tiles=p_smem_k_tiles,
-                            q_reg_k_tiles=q_reg_k_tiles,
-                            num_consumer=num_consumer,
-                            use_scheduler_barrier=0,
-                        ))
+                tmp_cfgs: list[TConfig] = []
+                max_bn = 0
+                for bn in range(mma_k, bn_max + 1, mma_k):
+                    # FP8 row-major V uses the transpose path. For non-64-aligned
+                    # HD, its current transpose layout requires BN % 64 == 0.
+                    if elem_width == 1 and HD % 64 != 0 and bn % 64 != 0:
+                        continue
+
+                    p_total_tiles = bn // mma_k
+                    for p_smem_k_tiles in range(p_total_tiles + 1):
+                        for q_reg_k_tiles in range(q_total_tiles + 1):
+                            smem_size = _smem_size_bytes(
+                                bm, bn, HD, stage, elem_width,
+                                p_smem_k_tiles, q_reg_k_tiles, num_consumer,
+                            )
+                            if smem_size > smem_limit:
+                                continue
+                            consumer_required_bytes = _consumer_register_bytes(
+                                bm, HD, bn, elem_width, p_smem_k_tiles,
+                                q_reg_k_tiles, num_consumer, mode,
+                            )
+                            if not _allocation_is_valid(
+                                consumer_required_bytes=consumer_required_bytes,
+                                producer_reg_dealloc=producer_reg_dealloc,
+                                consumer_reg_alloc=consumer_reg_alloc,
+                                num_consumer=num_consumer,
+                                reg_limit=reg_limit,
+                            ):
+                                continue
+
+                            if max_bn < bn:
+                                max_bn = bn
+                            tmp_cfgs.append(TConfig(
+                                kBlockM=bm,
+                                kBlockN=bn,
+                                kStage=stage,
+                                producer_reg_dealloc=producer_reg_dealloc,
+                                consumer_reg_alloc=consumer_reg_alloc,
+                                p_smem_k_tiles=p_smem_k_tiles,
+                                q_reg_k_tiles=q_reg_k_tiles,
+                                num_consumer=num_consumer,
+                                use_scheduler_barrier=0,
+                                rescale_o_before_gemm=default_rescale_o_before_gemm,
+                            ))
+                # delete those bn values that are less than half of max_bn.
+                min_bn = (((max_bn * (1 - bn_rate)) + mma_k-1) // mma_k) * mma_k
+                for cfg in tmp_cfgs:
+                    if cfg.kBlockN >= min_bn:
+                        configs.append(cfg)
     return _unique_configs(configs)
 
 
 def mix_wgmma_second_configs(configs: list[TConfig]) -> list[TConfig]:
-    """Generate scheduler-barrier alternatives for multi-consumer winners.
+    """Generate joint scheduler/rescale alternatives for stage-1 winners.
 
     A single consumer warpgroup has no inter-warpgroup execution order to
     enforce, and the C++ scheduler barrier is intentionally a 2--4 WG ring.
-    Its only meaningful configuration is therefore ``sb0``.
+    It therefore keeps only ``sb0``. Every mapping tests both rescale
+    placements; multi-consumer mappings additionally test both scheduler
+    choices, including their interaction with the rescale placement.
     """
     if not isinstance(configs, list):
         raise TypeError("configs must be a list[TConfig]")
@@ -377,10 +507,27 @@ def mix_wgmma_second_configs(configs: list[TConfig]) -> list[TConfig]:
     for config in configs:
         if not isinstance(config, TConfig):
             raise TypeError("configs must contain only TConfig values")
+        # Old result JSON files may contain BM>256 candidates generated before
+        # the TMA box limit was enforced.  Do not derive stage-2 variants from
+        # descriptors that cannot be constructed on Hopper.
+        if config.kBlockM > MAX_TMA_M:
+            continue
         if config.use_scheduler_barrier not in (0, 1):
             raise ValueError("use_scheduler_barrier must be 0 or 1")
-        if config.use_scheduler_barrier == 0 and config.num_consumer >= 2:
-            result.append(replace(config, use_scheduler_barrier=1))
+        if config.rescale_o_before_gemm not in (0, 1):
+            raise ValueError("rescale_o_before_gemm must be 0 or 1")
+        if config.num_consumer == 1 and config.use_scheduler_barrier != 0:
+            raise ValueError("a single consumer warpgroup requires sb0")
+        scheduler_values = (0, 1) if config.num_consumer >= 2 else (0,)
+        for use_scheduler_barrier in scheduler_values:
+            for rescale_o_before_gemm in (0, 1):
+                candidate = replace(
+                    config,
+                    use_scheduler_barrier=use_scheduler_barrier,
+                    rescale_o_before_gemm=rescale_o_before_gemm,
+                )
+                if candidate != config:
+                    result.append(candidate)
     return _unique_configs(result)
 
 
@@ -388,7 +535,7 @@ def mix_wgmma_third_configs(
     configs: list[TConfig],
     HD: int,
     elem_width: int,
-    reg_limit: int = 65_536,
+    reg_limit: int = 262_144,
     mode: Mode = Mode.RADICAL,
 ) -> list[TConfig]:
     """Expand register-allocation alternatives for stage-2 winners.
@@ -404,16 +551,23 @@ def mix_wgmma_third_configs(
     for config in configs:
         if not isinstance(config, TConfig):
             raise TypeError("configs must contain only TConfig values")
+        # Keep stage 3 safe when its input comes from a historical tuning
+        # result rather than the newly capped base-config generator.
+        if config.kBlockM > MAX_TMA_M:
+            continue
         if config.num_consumer == 4:
             continue
         if config.num_consumer not in REGISTER_ALLOCATION:
             raise ValueError(
                 f"no register allocations for num_consumer={config.num_consumer}"
             )
-        if config.kBlockM != MMA_M * config.num_consumer:
-            raise ValueError("kBlockM must equal 64 * num_consumer")
+        compute_m = MMA_M * config.num_consumer
+        if config.kBlockM < compute_m or config.kBlockM % compute_m != 0:
+            raise ValueError(
+                "kBlockM must be a positive multiple of 64 * num_consumer"
+            )
 
-        consumer_required = _consumer_registers_per_thread(
+        consumer_required_bytes = _consumer_register_bytes(
             config.kBlockM, HD, config.kBlockN, elem_width,
             config.p_smem_k_tiles, config.q_reg_k_tiles,
             config.num_consumer, mode,
@@ -427,7 +581,7 @@ def mix_wgmma_third_configs(
             ):
                 continue
             if not _allocation_is_valid(
-                consumer_required=consumer_required,
+                consumer_required_bytes=consumer_required_bytes,
                 producer_reg_dealloc=producer_reg_dealloc,
                 consumer_reg_alloc=consumer_reg_alloc,
                 num_consumer=config.num_consumer,
@@ -440,3 +594,8 @@ def mix_wgmma_third_configs(
                 consumer_reg_alloc=consumer_reg_alloc,
             ))
     return _unique_configs(result)
+
+# if __name__ == "__main__":
+#     cfgs = mix_wgmma_base_configs(HD=64, mode=Mode.KEEP)
+#     for cfg in cfgs:
+#         print(cfg)

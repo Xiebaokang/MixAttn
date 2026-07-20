@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import replace
 from pathlib import Path
+import random
 
 from utils import Shape, DType, Mode, TConfig, BenchResult
 from interface import run_interface
@@ -40,6 +41,7 @@ def _run_stage(
     register_usage_level: int,
     rank: int,
     timeout_seconds: float,
+    mode: Mode,
     src_dir: str | Path | None,
     result_dir: str | Path | None = None,
 ) -> list[BenchResult]:
@@ -60,6 +62,7 @@ def _run_stage(
         register_usage_level=register_usage_level,
         rank=rank,
         timeout_seconds=timeout_seconds,
+        mode=mode,
         src_dir=src_dir,
         result_dir=result_dir,
     )
@@ -70,9 +73,10 @@ def tune(
     dtype: DType,
     causal: bool,
     smem_limit: int = 232_448,
-    reg_limit: int = 65_536,
+    reg_limit: int = 262_144,
     num_consumer_limit: tuple[int, int] = (1, 3),
     stage_limit: tuple[int, int] = (1, 3),
+    bn_rate: float = 0.6,
     arch: str = "90a",
     jobs: int = 16,
     rank: int = 15,
@@ -111,12 +115,13 @@ def tune(
         causal=causal,
         smem_limit=smem_limit,
         reg_limit=reg_limit,
+        bn_rate=bn_rate,
         num_consumer_limit=num_consumer_limit,
         stage_limit=stage_limit,
         mode=mode,
     )
 
-    # base_configs = [base_configs[0]]
+    base_configs = random.sample(base_configs, rank)
     if not base_configs:
         raise ValueError("base config generation returned no valid configs")
 
@@ -131,26 +136,28 @@ def tune(
         register_usage_level=coarse_register_usage_level,
         rank=rank,
         timeout_seconds=benchmark_timeout_seconds,
+        mode=mode,
         src_dir=src_dir,
     )
     if not ret1:
         return []
 
-    scheduler_configs = mix_wgmma_second_configs([item.config for item in ret1])
-    scheduler_results = _run_stage(
-        stage_name="stage 2 / scheduler barrier",
+    schedule_configs = mix_wgmma_second_configs([item.config for item in ret1])
+    schedule_results = _run_stage(
+        stage_name="stage 2 / execution schedule",
         shape=shape,
         dtype=dtype,
         causal=causal,
-        configs=scheduler_configs,
+        configs=schedule_configs,
         arch=arch,
         jobs=jobs,
         register_usage_level=coarse_register_usage_level,
-        rank=len(scheduler_configs),
+        rank=len(schedule_configs),
         timeout_seconds=benchmark_timeout_seconds,
+        mode=mode,
         src_dir=src_dir,
     )
-    ret2 = get_best_result(ret1, scheduler_results)
+    ret2 = get_best_result(ret1, schedule_results)
 
     register_configs = mix_wgmma_third_configs(
         configs=[item.config for item in ret2],
@@ -170,6 +177,7 @@ def tune(
         register_usage_level=coarse_register_usage_level,
         rank=len(register_configs),
         timeout_seconds=benchmark_timeout_seconds,
+        mode=mode,
         src_dir=src_dir,
     )
     ret3 = get_best_result(ret2, register_results)
@@ -187,15 +195,16 @@ def tune(
         register_usage_level=final_register_usage_level,
         rank=rank,
         timeout_seconds=benchmark_timeout_seconds,
+        mode=mode,
         src_dir=src_dir,
         result_dir=result_dir,
     )
 
 
 if __name__ == "__main__":
-    tune(shape=(1, 16, 30720, 64), dtype=DType.FP16, causal=True)
-    tune(shape=(1, 16, 30720, 128), dtype=DType.FP16, causal=True)
-    tune(shape=(1, 16, 30720, 256), dtype=DType.FP16, causal=True)
-    tune(shape=(1, 16, 30720, 64), dtype=DType.FP16, causal=False)
-    tune(shape=(1, 16, 30720, 128), dtype=DType.FP16, causal=False)
-    tune(shape=(1, 16, 30720, 256), dtype=DType.FP16, causal=False)
+    # tune(shape=(1, 16, 30720, 64), dtype=DType.FP16, causal=True, rank=32)
+    # tune(shape=(1, 16, 30720, 128), dtype=DType.FP16, causal=True, rank=32)
+    # tune(shape=(1, 16, 30720, 256), dtype=DType.FP16, causal=True, rank=32)
+    tune(shape=(1, 16, 30720, 64), dtype=DType.FP16, causal=False, rank=32)
+    # tune(shape=(1, 16, 30720, 128), dtype=DType.FP16, causal=False, rank=32)
+    # tune(shape=(1, 16, 30720, 256), dtype=DType.FP16, causal=False, rank=32)

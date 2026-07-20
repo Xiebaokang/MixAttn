@@ -10,7 +10,8 @@ from pathlib import Path
 from time import perf_counter
 from typing import Iterable
 
-from utils import Shape, DType, TConfig, CompileResult, BenchResult
+from utils import Shape, DType, Mode, TConfig, CompileResult, BenchResult
+from configure import _consumer_register_bytes, _smem_size_bytes
 
 
 HERE = Path(__file__).resolve().parent
@@ -27,6 +28,7 @@ TCONFIG_FIELDS = (
     "q_reg_k_tiles",
     "num_consumer",
     "use_scheduler_barrier",
+    "rescale_o_before_gemm",
 )
 
 PTXAS_PERF_LOSS_RE = re.compile(
@@ -428,6 +430,8 @@ def _save_bench_results(
                 "executable": str(item.exec_file),
                 "time_ms": item.time_ms,
                 "tflops": item.tflops,
+                "smem_size": item.smem_size,
+                "reg_size": item.reg_size,
             }
             for item in results
         ],
@@ -462,13 +466,27 @@ def bench_interface(
     shape: Shape | None = None,
     dtype: DType | None = None,
     causal: bool | None = None,
+    mode: Mode = Mode.RADICAL,
 ) -> list[BenchResult]:
     if rank <= 0:
         raise ValueError("rank must be positive")
     if timeout_seconds <= 0:
         raise ValueError("timeout_seconds must be positive")
+    if not isinstance(mode, Mode):
+        raise TypeError("mode must be a Mode value")
     if not compiled:
         return []
+    if shape is None or dtype is None:
+        raise ValueError(
+            "shape and dtype are required to calculate smem_size and reg_size"
+        )
+    if len(shape) != 4 or any(value <= 0 for value in shape):
+        raise ValueError("shape must be a positive (B, H, S, D) tuple")
+    if not isinstance(dtype, DType):
+        raise TypeError("dtype must be a DType value")
+
+    hd = shape[-1]
+    elem_width = 1 if dtype is DType.FP8 else 2
 
     successful: list[tuple[CompileResult, float, float]] = []
     failed: list[dict] = []
@@ -517,6 +535,26 @@ def bench_interface(
             exec_file=item.exec_file,
             time_ms=time_ms,
             tflops=tflops,
+            smem_size=_smem_size_bytes(
+                item.config.kBlockM,
+                item.config.kBlockN,
+                hd,
+                item.config.kStage,
+                elem_width,
+                item.config.p_smem_k_tiles,
+                item.config.q_reg_k_tiles,
+                item.config.num_consumer,
+            ),
+            reg_size=_consumer_register_bytes(
+                item.config.kBlockM,
+                hd,
+                item.config.kBlockN,
+                elem_width,
+                item.config.p_smem_k_tiles,
+                item.config.q_reg_k_tiles,
+                item.config.num_consumer,
+                mode,
+            ),
         )
         for index, (item, time_ms, tflops) in enumerate(successful[:rank], 1)
     ]
@@ -566,6 +604,7 @@ def run_interface(
     timeout_seconds: float = 120.0,
     src_dir: str | Path | None = None,
     result_dir: str | Path | None = None,
+    mode: Mode = Mode.RADICAL,
 ) -> list[BenchResult]:
     src_dir = HERE / "src" if src_dir is None else Path(src_dir)
     case_name = _case_name(shape, dtype, causal)
@@ -594,15 +633,16 @@ def run_interface(
         shape=shape,
         dtype=dtype,
         causal=causal,
+        mode=mode,
     )
 
 # if __name__ == "__main__":
 #     shape = (1, 16, 32768, 64)
-#     dtype = DType.FP8
-#     causal = True
-#     cfg1 = TConfig(128, 128, 2, 24, 240, 1, 1, 2, 0)
-#     cfg2 = TConfig(128, 128, 2, 24, 240, 0, 1, 2, 0)
-#     cfg3 = TConfig(128, 128, 2, 24, 240, 1, 0, 2, 0)
-#     cfg4 = TConfig(128, 128, 2, 24, 240, 0, 0, 2, 0)
-#     result_dir = HERE / "results"
-#     run_interface(shape=shape, dtype=dtype, causal=causal, configs=[cfg1, cfg2, cfg3, cfg4], result_dir=result_dir)
+#     dtype = DType.FP16
+#     causal = False
+    # cfg1 = TConfig(256, 96, 2, 24, 240, 1, 1, 2, 1, 1)
+    # cfg2 = TConfig(256, 96, 2, 24, 240, 0, 1, 2, 1, 1)
+    # cfg3 = TConfig(256, 96, 2, 24, 240, 1, 0, 2, 1, 1)
+    # cfg4 = TConfig(256, 96, 2, 24, 240, 0, 0, 2, 1, 1)
+    # result_dir = HERE / "results"
+    # run_interface(shape=shape, dtype=dtype, causal=causal, configs=[cfg1], result_dir=result_dir)

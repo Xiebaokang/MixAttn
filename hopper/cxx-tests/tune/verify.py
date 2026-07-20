@@ -126,23 +126,41 @@ def _load_metadata(
     return shape, dtype, causal
 
 
-def _load_config(value: object, path: Path, position: int) -> TConfig:
+def _load_config(
+    value: object,
+    path: Path,
+    position: int,
+    dtype: DType,
+    head_dim: int,
+) -> TConfig:
     if not isinstance(value, dict):
         raise ValueError(f"top_results[{position}].config in {path} must be an object")
-    keys = set(value)
+    config_values = dict(value)
+    keys = set(config_values)
     missing = CONFIG_FIELDS - keys
     extra = keys - CONFIG_FIELDS
+    # Results written before rescale placement became tunable used the same
+    # heuristic now assigned to stage-1 base configs. The custom API fixes
+    # V_colmajor=false and IntraWGOverlap=true.
+    if missing == {"rescale_o_before_gemm"}:
+        config_values["rescale_o_before_gemm"] = int(
+            head_dim > 128 and dtype is DType.FP16
+        )
+        missing.clear()
     if missing or extra:
         raise ValueError(
             f"invalid config fields at top_results[{position}] in {path}: "
             f"missing={sorted(missing)}, extra={sorted(extra)}"
         )
-    if any(isinstance(value[name], bool) or not isinstance(value[name], int)
+    if any(isinstance(config_values[name], bool) or
+           not isinstance(config_values[name], int)
            for name in CONFIG_FIELDS):
         raise ValueError(
             f"all config values at top_results[{position}] in {path} must be integers"
         )
-    return TConfig(**{name: value[name] for name in CONFIG_FIELDS})
+    return TConfig(**{
+        name: config_values[name] for name in CONFIG_FIELDS
+    })
 
 
 def load_cases(
@@ -169,7 +187,9 @@ def load_cases(
     for position, entry in selected:
         if not isinstance(entry, dict) or "config" not in entry:
             raise ValueError(f"top_results[{position}] in {path} has no config")
-        config = _load_config(entry["config"], path, position)
+        config = _load_config(
+            entry["config"], path, position, dtype, shape[-1]
+        )
         executable_value = entry.get("executable")
         if executable_value is None:
             executable = None
