@@ -378,7 +378,7 @@ def mix_wgmma_base_configs(
     causal: bool = False,
     smem_limit: int = 232_448,
     reg_limit: int = 262_144,
-    bn_rate: float = 0.4,
+    bn_rate: float = 0.5,
     num_consumer_limit: tuple[int, int] = (1, 4),
     stage_limit: tuple[int, int] = (1, 3),
     mode: Mode = Mode.RADICAL,
@@ -596,6 +596,6 @@ def mix_wgmma_third_configs(
     return _unique_configs(result)
 
 # if __name__ == "__main__":
-#     cfgs = mix_wgmma_base_configs(HD=64, mode=Mode.KEEP)
+#     cfgs = mix_wgmma_base_configs(HD=128, mode=Mode.KEEP, num_consumer_limit=(2, 3))
 #     for cfg in cfgs:
 #         print(cfg)

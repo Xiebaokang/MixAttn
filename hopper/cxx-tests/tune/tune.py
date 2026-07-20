@@ -74,15 +74,15 @@ def tune(
     causal: bool,
     smem_limit: int = 232_448,
     reg_limit: int = 262_144,
-    num_consumer_limit: tuple[int, int] = (1, 3),
+    num_consumer_limit: tuple[int, int] = (2, 3),
     stage_limit: tuple[int, int] = (1, 3),
-    bn_rate: float = 0.6,
+    bn_rate: float = 0.5,
     arch: str = "90a",
-    jobs: int = 16,
+    jobs: int = 20,
     rank: int = 15,
     coarse_register_usage_level: int = 5,
     final_register_usage_level: int = 10,
-    mode: Mode = Mode.RADICAL,
+    mode: Mode = Mode.KEEP,
     benchmark_timeout_seconds: float = 120.0,
     src_dir: str | Path | None = None,
     result_dir: str | Path | None = None,
@@ -121,7 +121,7 @@ def tune(
         mode=mode,
     )
 
-    base_configs = random.sample(base_configs, rank)
+    # base_configs = random.sample(base_configs, rank)
     if not base_configs:
         raise ValueError("base config generation returned no valid configs")
 
@@ -202,9 +202,14 @@ def tune(
 
 
 if __name__ == "__main__":
-    # tune(shape=(1, 16, 30720, 64), dtype=DType.FP16, causal=True, rank=32)
-    # tune(shape=(1, 16, 30720, 128), dtype=DType.FP16, causal=True, rank=32)
-    # tune(shape=(1, 16, 30720, 256), dtype=DType.FP16, causal=True, rank=32)
-    tune(shape=(1, 16, 30720, 64), dtype=DType.FP16, causal=False, rank=32)
-    # tune(shape=(1, 16, 30720, 128), dtype=DType.FP16, causal=False, rank=32)
-    # tune(shape=(1, 16, 30720, 256), dtype=DType.FP16, causal=False, rank=32)
+    # fp16
+    tune(shape=(1, 16, 30720, 64), dtype=DType.FP16, causal=False)
+    tune(shape=(1, 16, 30720, 128), dtype=DType.FP16, causal=False)
+    tune(shape=(1, 16, 30720, 64), dtype=DType.FP16, causal=True)
+    tune(shape=(1, 16, 30720, 128), dtype=DType.FP16, causal=True)
+    # fp8
+    tune(shape=(1, 16, 30720, 64), dtype=DType.FP8, causal=False)
+    tune(shape=(1, 16, 30720, 128), dtype=DType.FP8, causal=False)
+    tune(shape=(1, 16, 30720, 64), dtype=DType.FP8, causal=True)
+    tune(shape=(1, 16, 30720, 128), dtype=DType.FP8, causal=True)
+
