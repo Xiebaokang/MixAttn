@@ -507,10 +507,21 @@ public:
                         tOrO,
                         softmax, threadIdx.x - MmaThreadOffset, work_idx, seqlen_info, block_coord, shared_storage);
 #elif USE_MIX_WGMMA
-                    tile_valid = mainloop.mma_mix_wgmma(
-                        params.mainloop, pipeline_k, pipeline_v, smem_pipe_read,
-                        tOrO, tRrQ,
-                        softmax, threadIdx.x - MmaThreadOffset, work_idx, seqlen_info, block_coord, shared_storage);
+                    if constexpr (CollectiveMainloop::RepeatM == 1) {
+                        // Preserve the original USE_MIX_WGMMA instantiation
+                        // when BM exactly matches the consumer-WG footprint.
+                        tile_valid = mainloop.mma_mix_wgmma(
+                            params.mainloop, pipeline_k, pipeline_v, smem_pipe_read,
+                            tOrO, tRrQ,
+                            softmax, threadIdx.x - MmaThreadOffset, work_idx,
+                            seqlen_info, block_coord, shared_storage);
+                    } else {
+                        tile_valid = mainloop.mma_mix_wgmma_repeat(
+                            params.mainloop, pipeline_k, pipeline_v, smem_pipe_read,
+                            tOrO, tRrQ,
+                            softmax, threadIdx.x - MmaThreadOffset, work_idx,
+                            seqlen_info, block_coord, shared_storage);
+                    }
 #else
                     tile_valid = mainloop.mma(
                         params.mainloop, pipeline_k, pipeline_v, smem_pipe_read,

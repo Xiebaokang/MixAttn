@@ -10,6 +10,7 @@
 
 #include <cutlass/numeric_types.h>
 
+#include "custom_numerical_limits.h"
 #include "utils.h"
 
 namespace flash {
@@ -74,8 +75,9 @@ __forceinline__ __device__ void scale_apply_exp2(Tensor<Engine0, Layout0> &tenso
     for (int mi = 0; mi < size<0>(tensor); ++mi) {
         // If max is -inf, then all elements must have been -inf (possibly due to masking).
         // We don't want (-inf - (-inf)) since that would give NaN.
+        const bool fully_masked = max(mi) == -INFINITY || max(mi) == MASK_VALUE;
         const float max_scaled = Check_inf
-            ? (max(mi) == -INFINITY ? 0.f : (!Scale_max ? max(mi) : max(mi) * scale) - max_offset)
+            ? (fully_masked ? 0.f : (!Scale_max ? max(mi) : max(mi) * scale) - max_offset)
             : (!Scale_max ? max(mi) : max(mi) * scale) - max_offset;
         #pragma unroll
         for (int ni = 0; ni < size<1>(tensor); ++ni)  {
@@ -89,6 +91,99 @@ __forceinline__ __device__ void scale_apply_exp2(Tensor<Engine0, Layout0> &tenso
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+// Non-owning view over one compile-time M repeat of a larger softmax state.
+// The score fragment only contains this repeat, while row_max/row_sum remain
+// persistent for the complete logical BM tile in the owning Softmax object.
+template <int kNRows, int Max_offset, typename TensorT>
+struct SoftmaxSlice {
+    TensorT row_max, row_sum;
+    float const softmax_scale_log2;
+
+    template<bool Is_first, bool Check_inf=false, typename Tensor0>
+    __forceinline__ __device__ auto max_get_scale(Tensor0 &acc_s) {
+        Tensor scores = make_tensor(acc_s.data(), flash::convert_layout_acc_rowcol(acc_s.layout()));
+        static_assert(CUTE_STATIC_V(size<0>(scores)) == kNRows);
+        Tensor scores_scale = make_fragment_like(row_max);
+        if constexpr (Is_first) {
+            flash::template reduce_max</*zero_init=*/true>(scores, row_max);
+            cute::fill(scores_scale, 1.f);
+        } else {
+            Tensor scores_max_prev = make_fragment_like(row_max);
+            cute::copy(row_max, scores_max_prev);
+            flash::template reduce_max</*zero_init=*/false>(scores, row_max);
+            #pragma unroll
+            for (int mi = 0; mi < size(row_max); ++mi) {
+                bool const fully_masked =
+                    row_max(mi) == -INFINITY || row_max(mi) == MASK_VALUE;
+                float scores_max_cur = !Check_inf || !fully_masked
+                    ? row_max(mi) : 0.0f;
+                scores_scale(mi) = exp2f(
+                    (scores_max_prev(mi) - scores_max_cur) * softmax_scale_log2);
+                row_sum(mi) *= scores_scale(mi);
+            }
+        }
+        return scores_scale;
+    }
+
+    template<bool Is_first, bool Check_inf=false, typename Tensor0>
+    __forceinline__ __device__ void online_softmax(Tensor0 &acc_s) {
+        Tensor scores = make_tensor(acc_s.data(), flash::convert_layout_acc_rowcol(acc_s.layout()));
+        static_assert(CUTE_STATIC_V(size<0>(scores)) == kNRows);
+        flash::template scale_apply_exp2</*Scale_max=*/true, Check_inf, Max_offset>(
+            scores, row_max, softmax_scale_log2);
+        flash::reduce_sum</*zero_init=*/Is_first, /*warp_reduce=*/false>(scores, row_sum);
+    }
+
+    template<bool Check_inf=false, typename Tensor0>
+    __forceinline__ __device__ void online_softmax_exp(Tensor0 &acc_s) {
+        Tensor scores = make_tensor(acc_s.data(), flash::convert_layout_acc_rowcol(acc_s.layout()));
+        static_assert(CUTE_STATIC_V(size<0>(scores)) == kNRows);
+        flash::template scale_apply_exp2</*Scale_max=*/true, Check_inf, Max_offset>(
+            scores, row_max, softmax_scale_log2);
+    }
+
+    template<bool Is_first, typename Tensor0>
+    __forceinline__ __device__ void online_softmax_reduce(Tensor0 &acc_s) {
+        Tensor scores = make_tensor(acc_s.data(), flash::convert_layout_acc_rowcol(acc_s.layout()));
+        static_assert(CUTE_STATIC_V(size<0>(scores)) == kNRows);
+        flash::reduce_sum</*zero_init=*/Is_first, /*warp_reduce=*/false>(scores, row_sum);
+    }
+
+    __forceinline__ __device__ auto finalize(float const final_scale=1.f) {
+        SumOp<float> sum_op;
+        quad_allreduce_(row_sum, row_sum, sum_op);
+        Tensor scores_scale = make_fragment_like(row_sum);
+        #pragma unroll
+        for (int mi = 0; mi < size(row_sum); ++mi) {
+            float sum = row_sum(mi);
+            float inv_sum = (sum == 0.f || sum != sum) ? 0.f : 1.f / sum;
+            scores_scale(mi) = inv_sum * final_scale;
+            if constexpr (Max_offset != 0) {
+                sum *= 1.f / float(1 << Max_offset);
+            }
+            row_sum(mi) = (sum == 0.f || sum != sum)
+                ? -INFINITY
+                : row_max(mi) * (softmax_scale_log2 * float(M_LN2)) + __logf(sum);
+        }
+        return scores_scale;
+    }
+
+    template<typename Tensor1, typename TensorScale>
+    __forceinline__ __device__ void rescale_o(
+            Tensor1 &acc_o, TensorScale const &scores_scale) {
+        Tensor acc_o_rowcol = make_tensor(
+            acc_o.data(), flash::convert_layout_acc_rowcol(acc_o.layout()));
+        static_assert(CUTE_STATIC_V(size<0>(acc_o_rowcol)) == kNRows);
+        #pragma unroll
+        for (int mi = 0; mi < size<0>(acc_o_rowcol); ++mi) {
+            #pragma unroll
+            for (int ni = 0; ni < size<1>(acc_o_rowcol); ++ni) {
+                acc_o_rowcol(mi, ni) *= scores_scale(mi);
+            }
+        }
+    }
+};
+
 template <int kNRows, int Max_offset=0>
 struct Softmax {
 
@@ -97,6 +192,22 @@ struct Softmax {
     float const softmax_scale_log2;
 
     CUTLASS_DEVICE Softmax(float const softmax_scale_log2_) : softmax_scale_log2(softmax_scale_log2_) {};
+
+    template <int RepeatMIdx, int RepeatMCount>
+    CUTLASS_DEVICE auto get_slice() {
+        static_assert(RepeatMCount >= 1 && RepeatMIdx >= 0 &&
+                      RepeatMIdx < RepeatMCount);
+        static_assert(kNRows % RepeatMCount == 0,
+                      "softmax rows must divide evenly across M repeats");
+        static constexpr int SliceRows = kNRows / RepeatMCount;
+        using SliceLayout = Layout<Shape<Int<SliceRows>>>;
+        Tensor row_max_slice = make_tensor(
+            row_max.data() + RepeatMIdx * SliceRows, SliceLayout{});
+        Tensor row_sum_slice = make_tensor(
+            row_sum.data() + RepeatMIdx * SliceRows, SliceLayout{});
+        return SoftmaxSlice<SliceRows, Max_offset, decltype(row_max_slice)>{
+            row_max_slice, row_sum_slice, softmax_scale_log2};
+    }
 
     template<bool Is_first, bool Check_inf=false, typename Tensor0>
     __forceinline__ __device__ TensorT max_get_scale(Tensor0 &acc_s) {
@@ -113,9 +224,10 @@ struct Softmax {
             flash::template reduce_max</*zero_init=*/false>(scores, row_max);
             #pragma unroll
             for (int mi = 0; mi < size(row_max); ++mi) {
-                float scores_max_cur = !Check_inf
-                    ? row_max(mi)
-                    : (row_max(mi) == -INFINITY ? 0.0f : row_max(mi));
+                bool const fully_masked =
+                    row_max(mi) == -INFINITY || row_max(mi) == MASK_VALUE;
+                float scores_max_cur = !Check_inf || !fully_masked
+                    ? row_max(mi) : 0.0f;
                 scores_scale(mi) = exp2f((scores_max_prev(mi) - scores_max_cur) * softmax_scale_log2);
                 row_sum(mi) *= scores_scale(mi);
             }

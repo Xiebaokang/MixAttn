@@ -321,8 +321,10 @@ void run_flash_fwd_custom(Flash_fwd_params &params, cudaStream_t stream) {
                   "kBlockM must be a positive multiple of 64");
     static_assert(kBlockN > 0 && kBlockN % kMmaK == 0,
                   "kBlockN must be a positive multiple of the input MMA-K");
-    static_assert(Config.num_consumer == kBlockM / 64,
-                  "num_consumer must match kBlockM / 64");
+    static_assert(Config.num_consumer >= 1 && Config.num_consumer <= 4,
+                  "num_consumer must be in [1, 4]");
+    static_assert(kBlockM % (Config.num_consumer * 64) == 0,
+                  "kBlockM must be divisible by num_consumer * MMA_M");
 
     static constexpr bool IntraWGOverlap = true;
 #else
@@ -361,9 +363,10 @@ void run_flash_fwd_custom(Flash_fwd_params &params, cudaStream_t stream) {
 #if USE_MIX_WGMMA
     std::printf("ProducerRegDealloc = %d, ConsumerRegAlloc = %d, NumConsumer = %d\n",
                 Config.producer_reg_dealloc, Config.consumer_reg_alloc, Config.num_consumer);
-    std::printf("PSmemKTiles = %d, QRegKTiles = %d, UseSchedulerBarrier = %d\n",
+    std::printf("PSmemKTiles = %d, QRegKTiles = %d, UseSchedulerBarrier = %d, RescaleOBeforeGemm = %d\n",
                 Config.p_smem_k_tiles, Config.q_reg_k_tiles,
-                Config.use_scheduler_barrier);
+                Config.use_scheduler_barrier,
+                Config.rescale_o_before_gemm);
 #endif
     // flash::CollectiveMainloopFwdSm90<kStages, ClusterShape, TileShape_MNK, kHeadDimV, Element, float, cutlass::arch::Sm90, Is_causal, Is_local, Has_softcap, Varlen, PagedKVNonTMA, AppendKV, HasQv, MmaPV_is_RS, IntraWGOverlap, PackGQA, Split, V_colmajor>
     std::printf("Is_causal = %d, Is_local = %d, Has_softcap = %d, Varlen = %d, PagedKVNonTMA = %d, AppendKV = %d, HasQv = %d, MmaPV_is_RS = %d, IntraWGOverlap = %d, PackGQA = %d, Split = %d, V_colmajor = %d\n",

@@ -86,6 +86,15 @@ struct CollectiveMainloopFwdSm90 {
     static constexpr int kHeadDim = get<2>(TileShape_MNK{});
 
 #if USE_MIX_WGMMA
+    static constexpr int MmaM = 64;
+    static constexpr int NumConsumerWarpGroups = Config.num_consumer;
+    static constexpr int ComputeM = NumConsumerWarpGroups * MmaM;
+    static_assert(NumConsumerWarpGroups >= 1 && NumConsumerWarpGroups <= 4,
+                  "num_consumer must be in [1, 4]");
+    static_assert(kBlockM % ComputeM == 0,
+                  "kBlockM must be divisible by num_consumer * MMA_M");
+    static constexpr int RepeatM = kBlockM / ComputeM;
+
     static constexpr uint32_t LoadRegisterRequirement = Config.producer_reg_dealloc;
     static constexpr uint32_t MmaRegisterRequirement = Config.consumer_reg_alloc;
 
@@ -97,6 +106,9 @@ struct CollectiveMainloopFwdSm90 {
                   "consumer_reg_alloc must be an 8-register-aligned value in [24, 256]");
     static_assert(Config.use_scheduler_barrier == 0 || Config.use_scheduler_barrier == 1,
                   "use_scheduler_barrier must be 0 or 1");
+    static_assert(Config.rescale_o_before_gemm == 0 ||
+                  Config.rescale_o_before_gemm == 1,
+                  "rescale_o_before_gemm must be 0 or 1");
     static_assert(Is_FP8 || cute::is_same_v<Element, cutlass::half_t>,
                   "USE_MIX_WGMMA only supports FP8 and FP16");
     static_assert(!LargeHeadDimV,
@@ -154,12 +166,21 @@ struct CollectiveMainloopFwdSm90 {
     static constexpr int PKTilesPerSW128 = 128 / (sizeof(Element) * MmaK);
     static constexpr int PKTilesPerSW64 = 64 / (sizeof(Element) * MmaK);
     static constexpr int PKTilesPerSW32 = 32 / (sizeof(Element) * MmaK);
-    static constexpr int P128KTiles = PSmemKTiles / PKTilesPerSW128 * PKTilesPerSW128;
+    // SS-PV uses P and V as two SMEM descriptors.  Do not give the compact P
+    // prefix a wider swizzle than the full V tile: for example BN=208 FP16
+    // selects SW32 for V, so an independently selected SW128 P prefix produces
+    // an incompatible descriptor pair.  Limit the P decomposition by the
+    // swizzle supported by the complete PV K dimension.
+    static constexpr bool VSupportsP128 =
+        PTotalKTiles % PKTilesPerSW128 == 0;
+    static constexpr bool VSupportsP64 =
+        PTotalKTiles % PKTilesPerSW64 == 0;
+    static constexpr int P128KTiles = VSupportsP128
+        ? PSmemKTiles / PKTilesPerSW128 * PKTilesPerSW128 : 0;
     static constexpr int PAfter128KTiles = PSmemKTiles - P128KTiles;
-    static constexpr int P64KTiles = PAfter128KTiles / PKTilesPerSW64 * PKTilesPerSW64;
+    static constexpr int P64KTiles = VSupportsP64
+        ? PAfter128KTiles / PKTilesPerSW64 * PKTilesPerSW64 : 0;
     static constexpr int P32KTiles = PAfter128KTiles - P64KTiles;
-    static_assert(P32KTiles == 0 || P32KTiles == PKTilesPerSW32,
-                  "P SMEM remainder cannot be represented by SW32");
     static constexpr bool HasP128 = P128KTiles > 0;
     static constexpr bool HasP64 = P64KTiles > 0;
     static constexpr bool HasP32 = P32KTiles > 0;
@@ -205,7 +226,14 @@ struct CollectiveMainloopFwdSm90 {
     static constexpr bool MmaPV_use_RS_WG1 = !MmaPV_is_RS && kHeadDim == 64 && kHeadDimV == 512;
 #endif
 
+#if USE_MIX_WGMMA
+    // RepeatM == 1 produces exactly the original AtomLayout. For RepeatM > 1
+    // the same consumer warpgroups own multiple M slices of the logical CTA
+    // tile and reuse each resident K/V stage across those slices.
+    using AtomLayoutQK = Layout<Shape<Int<NumConsumerWarpGroups>, _1, _1>>;
+#else
     using AtomLayoutQK = Layout<Shape<Int<kBlockM / 64>, _1, _1>>;
+#endif
     using TiledMmaQK = decltype(cute::make_tiled_mma(
         std::conditional_t<
             !MmaQK_is_RS,
@@ -324,19 +352,30 @@ struct CollectiveMainloopFwdSm90 {
         decltype(cute::get<0>(TileShape_MNK{})), decltype(cute::get<1>(TileShape_MNK{}))>());
     using SmemLayoutP = decltype(tile_to_shape(SmemLayoutAtomP{}, select<0, 1>(TileShape_MNK{})));
 #if USE_MIX_WGMMA
+    static constexpr int PBlockM = RepeatM == 1 ? kBlockM : ComputeM;
     template <int KCols>
     using SmemLayoutAtomPPart = decltype(cutlass::gemm::collective::detail::ss_smem_selector<
-        GMMA::Major::K, Element, Int<kBlockM>, Int<KCols>>());
-    template <int KCols>
+        GMMA::Major::K, Element, Int<PBlockM>, Int<KCols>>());
+    template <int KCols, class SmemLayoutAtom>
     using SmemLayoutPPart = decltype(tile_to_shape(
-        SmemLayoutAtomPPart<KCols>{}, Shape<Int<kBlockM>, Int<KCols>>{}));
-    using SmemLayoutP128 = SmemLayoutPPart<P128ColsSafe>;
-    using SmemLayoutP64 = SmemLayoutPPart<P64ColsSafe>;
-    using SmemLayoutP32 = SmemLayoutPPart<P32ColsSafe>;
+        SmemLayoutAtom{}, Shape<Int<PBlockM>, Int<KCols>>{}));
+    // Use explicit atoms for every region.  Calling ss_smem_selector on the
+    // aggregate region width can promote it again (e.g. twelve FP16 MMA-K
+    // tiles are 192 columns and would be selected as SW128 even though this
+    // region was deliberately classified as SW64 for a BN=224 SW64 V tile).
+    using SmemLayoutP128 = SmemLayoutPPart<
+        P128ColsSafe, cute::GMMA::Layout_K_SW128_Atom<Element>>;
+    using SmemLayoutP64 = SmemLayoutPPart<
+        P64ColsSafe, cute::GMMA::Layout_K_SW64_Atom<Element>>;
+    // When V itself is SW32, P32KTiles can contain the whole prefix rather
+    // than just a one-tile remainder.  Force the atom to SW32 instead of
+    // allowing ss_smem_selector to promote a multi-tile region to SW64/128.
+    using SmemLayoutP32 = SmemLayoutPPart<
+        P32ColsSafe, cute::GMMA::Layout_K_SW32_Atom<Element>>;
     static constexpr int P128SmemOffset = 0;
     static constexpr int P64SmemOffset = HasP128 ? cute::cosize_v<SmemLayoutP128> : 0;
     static constexpr int P32SmemOffset = P64SmemOffset + (HasP64 ? cute::cosize_v<SmemLayoutP64> : 0);
-    static constexpr int PSmemElements = kBlockM * PSmemCols;
+    static constexpr int PSmemElements = PBlockM * PSmemCols;
 #endif
 
     // Only for LargeHeadDimV where WG0 sends WG1 the scales
@@ -642,7 +681,13 @@ struct CollectiveMainloopFwdSm90 {
                   (NumMmaWarpGroups >= 2 && NumMmaWarpGroups <= 4),
                   "use_scheduler_barrier=1 requires 2 to 4 MMA consumer warpgroups");
 #endif
-    static constexpr bool RescaleOBeforeGemm = kHeadDim > 128 && (!Is_FP8 || V_colmajor) && IntraWGOverlap;
+#if USE_MIX_WGMMA
+    static constexpr bool RescaleOBeforeGemm =
+        Config.rescale_o_before_gemm != 0;
+#else
+    static constexpr bool RescaleOBeforeGemm =
+        kHeadDim > 128 && (!Is_FP8 || V_colmajor) && IntraWGOverlap;
+#endif
 
     // Host side kernel arguments
     struct Arguments {
@@ -2107,19 +2152,24 @@ struct CollectiveMainloopFwdSm90 {
         Tensor tOsP128 = wg_mma_pv_ss.partition_fragment_A(sP128);
         Tensor tOsP64 = wg_mma_pv_ss.partition_fragment_A(sP64);
         Tensor tOsP32 = wg_mma_pv_ss.partition_fragment_A(sP32);
+        auto make_p_reg_placeholder = [](auto ncols) {
+            constexpr int NCols = decltype(ncols)::value;
+            return make_tensor(
+                make_gmem_ptr(static_cast<Element const*>(nullptr)),
+                make_layout(Shape<Int<PBlockM>, Int<NCols>>{},
+                            Stride<Int<kBlockN>, _1>{}));
+        };
+        Tensor tOrP128Placeholder = thread_mma_pv.partition_fragment_A(
+            make_p_reg_placeholder(Int<P128ColsSafe>{}));
+        Tensor tOrP64Placeholder = thread_mma_pv.partition_fragment_A(
+            make_p_reg_placeholder(Int<P64ColsSafe>{}));
+        Tensor tOrP32Placeholder = thread_mma_pv.partition_fragment_A(
+            make_p_reg_placeholder(Int<P32ColsSafe>{}));
         Tensor gPRegPlaceholder = make_tensor(
             make_gmem_ptr(static_cast<Element const*>(nullptr)),
-            make_layout(Shape<Int<kBlockM>, Int<PRegColsSafe>>{},
+            make_layout(Shape<Int<PBlockM>, Int<PRegColsSafe>>{},
                         Stride<Int<kBlockN>, _1>{}));
         Tensor tOrPRegPlaceholder = thread_mma_pv.partition_fragment_A(gPRegPlaceholder);
-        Tensor gPOneTilePlaceholder = make_tensor(
-            make_gmem_ptr(static_cast<Element const*>(nullptr)),
-            make_layout(Shape<Int<kBlockM>, Int<MmaK>>{},
-                        Stride<Int<kBlockN>, _1>{}));
-        Tensor tOrPOneTilePlaceholder = thread_mma_pv.partition_fragment_A(gPOneTilePlaceholder);
-        Tensor cPOneTile = cute::make_identity_tensor(
-            Shape<Int<kBlockM>, Int<MmaK>>{});
-        Tensor tOcPOneTile = thread_mma_pv.partition_A(cPOneTile);
 #else
         Tensor tOsV = tOrV;
         Tensor tOsP = wg_mma_pv.partition_fragment_A(sP);
@@ -2233,71 +2283,65 @@ struct CollectiveMainloopFwdSm90 {
 
 #if USE_MIX_WGMMA
         // Avoid materializing a full low-precision P fragment. Convert each
-        // SMEM-prefix tile into a short-lived fragment and immediately store
-        // it. Convert the compact register suffix separately so its lifetime
-        // does not overlap the FP32 row-sum reduction.
+        // SW32/SW64/SW128 prefix region into a matching short-lived fragment
+        // and immediately store it. Convert the compact register suffix
+        // separately so its lifetime does not overlap the FP32 row-sum
+        // reduction.
         // For FP8 non-V-colmajor, tSrS has already received the C-register
         // permutation. For FP8 V-colmajor, each converted A tile is permuted
         // independently before it is stored or retained.
         auto convert_store_P_smem_prefix = [&](auto& tSrS) {
             Tensor tOrPAcc = make_tensor(
                 tSrS.data(), flash::convert_layout_acc_Aregs<TiledMmaPV>(tSrS.layout()));
-            // Keep the MMA-K mode (with extent 1) so STSM's retile_S sees the
-            // same rank-3 fragment shape as the normal full-P path. This one
-            // temporary is overwritten for every SMEM-prefix tile.
-            Tensor tOrPStoreTile = make_tensor_like<Element>(tOrPOneTilePlaceholder);
-            static_assert(CUTE_STATIC_V(size(tOrPStoreTile)) ==
-                          CUTE_STATIC_V(size(tOcPOneTile)));
-
             auto convert_store_region = [&](auto const& smem_tiled_copy,
                                             auto const& smem_thr_copy,
                                             auto& tPsPRegion,
-                                            auto start_tile,
-                                            auto tile_count) {
+                                            auto const& tOrPRegionPlaceholder,
+                                            auto start_tile) {
                 constexpr int StartTile = decltype(start_tile)::value;
-                constexpr int TileCount = decltype(tile_count)::value;
-                cute::for_each(cute::make_int_sequence<TileCount>{}, [&](auto tile_idx) {
+                // A vectorized STSM copy tile may contain multiple MMA-K
+                // tiles.  Build the complete register fragment matching the
+                // SW32/SW64/SW128 descriptor before retile_S; otherwise p>1
+                // converts only the first MMA-K tile and aliases the rest.
+                Tensor tOrPStoreRegion =
+                    make_tensor_like<Element>(tOrPRegionPlaceholder);
+                constexpr int MmaTileCount =
+                    CUTE_STATIC_V(size<2>(tOrPStoreRegion));
+                cute::for_each(cute::make_int_sequence<MmaTileCount>{}, [&](auto tile_idx) {
                     constexpr int SrcTile = StartTile + decltype(tile_idx)::value;
                     Tensor tOrPAccSlice = tOrPAcc(_, _, Int<SrcTile>{});
-                    Tensor tOrPAccTile = make_tensor(tOrPAccSlice.data(), tOrPStoreTile.layout());
+                    Tensor tOrPStoreTile = tOrPStoreRegion(_, _, tile_idx);
+                    Tensor tOrPAccTile = make_tensor(
+                        tOrPAccSlice.data(), tOrPStoreTile.layout());
                     convert_type_out(tOrPAccTile, tOrPStoreTile);
                     if constexpr (Is_FP8 && V_colmajor) {
                         flash::permute_Aregs_fp8(tOrPStoreTile);
                     }
-                    // Keep the original vectorized STSM mapping for each
-                    // short-lived prefix tile. FP8 byte/lane ordering has
-                    // already been established by convert_layout_acc_Aregs
-                    // and the optional permute_Aregs_fp8 above; only its copy
-                    // view is packed into b16 cells here.
-                    if constexpr (Is_FP8) {
-                        Tensor tPrPTile = smem_thr_copy.retile_S(
-                            recast<uint16_t>(tOrPStoreTile));
-                        cute::copy(smem_tiled_copy, tPrPTile(_, _, _0{}),
-                                   tPsPRegion(_, _, tile_idx));
-                    } else {
-                        Tensor tPrPTile = smem_thr_copy.retile_S(tOrPStoreTile);
-                        cute::copy(smem_tiled_copy, tPrPTile(_, _, _0{}),
-                                   tPsPRegion(_, _, tile_idx));
-                    }
                 });
+                if constexpr (Is_FP8) {
+                    Tensor tPrPRegion = smem_thr_copy.retile_S(
+                        recast<uint16_t>(tOrPStoreRegion));
+                    cute::copy(smem_tiled_copy, tPrPRegion, tPsPRegion);
+                } else {
+                    Tensor tPrPRegion =
+                        smem_thr_copy.retile_S(tOrPStoreRegion);
+                    cute::copy(smem_tiled_copy, tPrPRegion, tPsPRegion);
+                }
             };
 
             if constexpr (HasP128) {
-                constexpr int TileCount = CUTE_STATIC_V(size<2>(tPsP128));
                 convert_store_region(smem_tiled_copy_P128, smem_thr_copy_P128, tPsP128,
-                                     Int<0>{}, Int<TileCount>{});
+                                     tOrP128Placeholder, Int<0>{});
             }
             if constexpr (HasP64) {
                 constexpr int StartTile = P128KTiles;
-                constexpr int TileCount = CUTE_STATIC_V(size<2>(tPsP64));
                 convert_store_region(smem_tiled_copy_P64, smem_thr_copy_P64, tPsP64,
-                                     Int<StartTile>{}, Int<TileCount>{});
+                                     tOrP64Placeholder, Int<StartTile>{});
             }
             if constexpr (HasP32) {
                 constexpr int StartTile = P128KTiles + P64KTiles;
-                constexpr int TileCount = CUTE_STATIC_V(size<2>(tPsP32));
                 convert_store_region(smem_tiled_copy_P32, smem_thr_copy_P32, tPsP32,
-                                     Int<StartTile>{}, Int<TileCount>{});
+                                     tOrP32Placeholder, Int<StartTile>{});
             }
         };
 
@@ -2309,7 +2353,21 @@ struct CollectiveMainloopFwdSm90 {
                     constexpr int SrcTile = PSmemKTiles + decltype(reg_tile)::value;
                     Tensor tOrPAccTile = tOrPAcc(_, _, Int<SrcTile>{});
                     Tensor tOrPRegTile = tOrPReg(_, _, reg_tile);
-                    convert_type_out(tOrPAccTile, tOrPRegTile);
+                    if constexpr (RepeatM == 1) {
+                        // Keep the original MIX-WGMMA conversion unchanged.
+                        convert_type_out(tOrPAccTile, tOrPRegTile);
+                    } else {
+                        // A reduced consumer AtomLayout leaves logical-M
+                        // repeats in the fragment stride. The accumulator and
+                        // compact P suffix still contain the same values, but
+                        // their static stride types differ; present the
+                        // accumulator through the destination layout first.
+                        static_assert(CUTE_STATIC_V(size(tOrPAccTile)) ==
+                                      CUTE_STATIC_V(size(tOrPRegTile)));
+                        Tensor tOrPAccTileView = make_tensor(
+                            tOrPAccTile.data(), tOrPRegTile.layout());
+                        convert_type_out(tOrPAccTileView, tOrPRegTile);
+                    }
                     if constexpr (Is_FP8 && V_colmajor) {
                         flash::permute_Aregs_fp8(tOrPRegTile);
                     }
@@ -2432,6 +2490,256 @@ struct CollectiveMainloopFwdSm90 {
 #endif
         };
 
+#if USE_MIX_WGMMA
+        if constexpr (RepeatM > 1) {
+            using RepeatOLayout = decltype(partition_fragment_C(
+                TiledMmaPV{}, Shape<Int<ComputeM>, Int<kHeadDimV>>{}).layout());
+            static_assert(CUTE_STATIC_V(size(tOrO)) ==
+                          RepeatM * CUTE_STATIC_V(size(RepeatOLayout{})));
+
+            flash::Mask<ComputeM, kBlockN, PackGQA, TiledMmaQK> repeat_mask(
+                thread_idx, seqlen_q, seqlen_k, params.window_size_left,
+                params.window_size_right, 0, params.qhead_per_khead_divmod);
+            Tensor tSrS = partition_fragment_C(
+                tiled_mma_qk, Shape<Int<ComputeM>, Int<kBlockN>>{});
+            Tensor tOrPAcc = make_tensor(
+                tSrS.data(),
+                flash::convert_layout_acc_Aregs<TiledMmaPV>(tSrS.layout()));
+            Tensor tOrP = [&] {
+                if constexpr (HasPSmem) {
+                    return make_tensor_like<Element>(tOrPRegPlaceholder);
+                } else {
+                    return make_tensor_like<Element>(tOrPAcc);
+                }
+            }();
+            clear(tOrO);
+
+            PipelineState smem_pipe_read_k = smem_pipe_read;
+            PipelineState smem_pipe_read_v = smem_pipe_read;
+
+            auto thread_mma_qk_repeat_rs =
+                tiled_mma_qk_rs.get_thread_slice(thread_idx);
+            Tensor gQRegRepeatPlaceholder = make_tensor(
+                make_gmem_ptr(static_cast<Element const*>(nullptr)),
+                make_layout(Shape<Int<ComputeM>, Int<QRegColsSafe>>{},
+                            Stride<Int<kHeadDim>, _1>{}));
+            Tensor tRrQRepeatPlaceholder =
+                thread_mma_qk_repeat_rs.partition_fragment_A(
+                    gQRegRepeatPlaceholder);
+            if constexpr (HasQReg) {
+                static_assert(CUTE_STATIC_V(size(tRrQ)) ==
+                              RepeatM * CUTE_STATIC_V(
+                                  size(tRrQRepeatPlaceholder)));
+            }
+
+            auto get_o_slice = [&](auto repeat_idx) {
+                constexpr int R = decltype(repeat_idx)::value;
+                return make_tensor(
+                    tOrO.data() + R * CUTE_STATIC_V(size(RepeatOLayout{})),
+                    RepeatOLayout{});
+            };
+
+            auto issue_qk = [&](auto repeat_idx, PipelineState const& k_state) {
+                constexpr int R = decltype(repeat_idx)::value;
+                if constexpr (!HasQReg) {
+                    Tensor sQRepeat = cute::local_tile(
+                        sQ, Shape<Int<ComputeM>, Int<kHeadDim>>{},
+                        make_coord(Int<R>{}, _0{}));
+                    Tensor tSrQRepeat =
+                        wg_mma_qk.partition_fragment_A(sQRepeat);
+                    flash::gemm<true, -1>(
+                        tiled_mma_qk, tSrQRepeat,
+                        tSrK(_, _, _, k_state.index()), tSrS);
+                } else {
+                    Tensor sQ128Repeat = cute::local_tile(
+                        sQ128, Shape<Int<ComputeM>, Int<Q128ColsSafe>>{},
+                        make_coord(Int<R>{}, _0{}));
+                    Tensor sQ64Repeat = cute::local_tile(
+                        sQ64, Shape<Int<ComputeM>, Int<Q64ColsSafe>>{},
+                        make_coord(Int<R>{}, _0{}));
+                    Tensor sQ32Repeat = cute::local_tile(
+                        sQ32, Shape<Int<ComputeM>, Int<Q32ColsSafe>>{},
+                        make_coord(Int<R>{}, _0{}));
+                    Tensor tSsQ128Repeat =
+                        wg_mma_qk.partition_fragment_A(sQ128Repeat);
+                    Tensor tSsQ64Repeat =
+                        wg_mma_qk.partition_fragment_A(sQ64Repeat);
+                    Tensor tSsQ32Repeat =
+                        wg_mma_qk.partition_fragment_A(sQ32Repeat);
+                    Tensor tRrQRepeat = make_tensor(
+                        tRrQ.data() + R * CUTE_STATIC_V(
+                            size(tRrQRepeatPlaceholder)),
+                        tRrQRepeatPlaceholder.layout());
+                    flash::gemmQK<HasQ128, HasQ64, HasQ32, HasQReg,
+                                  true, -1>(
+                        tiled_mma_qk, tiled_mma_qk_rs,
+                        tSsQ128Repeat, tSsQ64Repeat, tSsQ32Repeat,
+                        tRrQRepeat, tSrK(_, _, _, k_state.index()), tSrS);
+                }
+            };
+
+            auto prepare_softmax = [&](auto repeat_idx, auto is_first_type,
+                                       int const current_n_block) {
+                constexpr int R = decltype(repeat_idx)::value;
+                constexpr bool IsFirst = decltype(is_first_type)::value;
+                scoremod_premask_fn(tSrS);
+                repeat_mask.template apply<true, Is_causal, Is_local>(
+                    tSrS, m_block * RepeatM + R, current_n_block);
+                auto softmax_slice = softmax.template get_slice<R, RepeatM>();
+                auto scale = softmax_slice.template max_get_scale<IsFirst, true>(tSrS);
+                if constexpr (HasPSmem) {
+                    softmax_slice.template online_softmax_exp<true>(tSrS);
+                    softmax_slice.template online_softmax_reduce<IsFirst>(tSrS);
+                    if constexpr (Is_FP8 && !V_colmajor) {
+                        flash::permute_Cregs_fp8(tSrS);
+                    }
+                } else {
+                    softmax_slice.template online_softmax<IsFirst, true>(tSrS);
+                    if constexpr (Is_FP8 && !V_colmajor) {
+                        flash::permute_Cregs_fp8(tSrS);
+                    }
+                }
+                return scale;
+            };
+
+            auto materialize_p = [&] {
+                if constexpr (HasPSmem) {
+                    convert_store_P_smem_prefix(tSrS);
+                    convert_P_reg_suffix(tSrS, tOrP);
+                } else {
+                    convert_type_out(tOrPAcc, tOrP);
+                    if constexpr (Is_FP8 && V_colmajor) {
+                        flash::permute_Aregs_fp8(tOrP);
+                    }
+                }
+                if constexpr (StorePInSmem) { arrive_on_P_write_barrier(); }
+            };
+
+            auto issue_pv = [&](auto repeat_idx, PipelineState const& v_state) {
+                Tensor tOrOSlice = get_o_slice(repeat_idx);
+                gemm_pv(tOrV(_, _, _, v_state.index()),
+                        tOsV(_, _, _, v_state.index()), tOrP,
+                        tOrOSlice, cute::false_type{});
+            };
+
+            // Bootstrap (K0, R0): produce the first P without a previous PV.
+            consumer_wait(pipeline_k, smem_pipe_read_k);
+            issue_qk(Int<0>{}, smem_pipe_read_k);
+            warpgroup_wait<0>();
+            auto scores_scale = prepare_softmax(
+                Int<0>{}, cute::true_type{}, n_block);
+            materialize_p();
+
+            // One steady work item: QK(current), PV(previous), then
+            // softmax(current) while previous PV remains in flight.
+            auto steady_step = [&](auto repeat_idx, auto is_first_type,
+                                   int const current_n_block) {
+                constexpr int R = decltype(repeat_idx)::value;
+                constexpr int PrevR = R == 0 ? RepeatM - 1 : R - 1;
+                constexpr bool IsFirst = decltype(is_first_type)::value;
+
+                if constexpr (R == 0) {
+                    if (!UseSchedulerBarrier || warp_group_idx == 0) {
+                        consumer_wait(pipeline_k, smem_pipe_read_k);
+                    }
+                }
+                // Match the original overlap path: the scheduler token covers
+                // the current QK and previous PV WGMMA issue groups, while the
+                // following softmax remains outside the token critical section.
+                warp_scheduler_barrier_sync();
+                issue_qk(Int<R>{}, smem_pipe_read_k);
+
+                if constexpr (PrevR == 0) {
+                    if (!UseSchedulerBarrier || warp_group_idx == 0) {
+                        consumer_wait(pipeline_v, smem_pipe_read_v);
+                    }
+                }
+                if constexpr (RescaleOBeforeGemm) {
+                    auto previous_softmax =
+                        softmax.template get_slice<PrevR, RepeatM>();
+                    Tensor previous_o = get_o_slice(Int<PrevR>{});
+                    previous_softmax.rescale_o(previous_o, scores_scale);
+                }
+                issue_pv(Int<PrevR>{}, smem_pipe_read_v);
+                warp_scheduler_barrier_arrive();
+
+                // QK was issued before PV. Keep PV outstanding while the
+                // current score fragment is masked and normalized.
+                warpgroup_wait<1>();
+                if constexpr (R == RepeatM - 1) {
+                    pipeline_k.consumer_release(smem_pipe_read_k);
+                    ++smem_pipe_read_k;
+                }
+
+                auto current_scale = prepare_softmax(
+                    Int<R>{}, is_first_type, current_n_block);
+                if constexpr (!RescaleOBeforeGemm && !IsFirst) {
+                    auto current_softmax =
+                        softmax.template get_slice<R, RepeatM>();
+                    Tensor current_o = get_o_slice(Int<R>{});
+                    current_softmax.rescale_o(current_o, current_scale);
+                }
+
+                warpgroup_wait<0>();
+                if constexpr (PrevR == RepeatM - 1) {
+                    pipeline_v.consumer_release(smem_pipe_read_v);
+                    ++smem_pipe_read_v;
+                }
+
+                materialize_p();
+                cute::copy(current_scale, scores_scale);
+            };
+
+            // Finish the remaining repeats of the first K/V block.
+            cute::for_each(cute::make_int_sequence<RepeatM - 1>{}, [&](auto i) {
+                steady_step(Int<decltype(i)::value + 1>{},
+                            cute::true_type{}, n_block);
+            });
+            --n_block;
+
+            // Subsequent K/V blocks. R0 overlaps the previous block's last PV.
+            #pragma unroll 1
+            for (; n_block >= n_block_min; --n_block) {
+                cute::for_each(cute::make_int_sequence<RepeatM>{}, [&](auto r) {
+                    steady_step(r, cute::false_type{}, n_block);
+                });
+            }
+
+            // Drain the last P/V pair.
+            if constexpr (RescaleOBeforeGemm) {
+                auto last_softmax =
+                    softmax.template get_slice<RepeatM - 1, RepeatM>();
+                Tensor last_o = get_o_slice(Int<RepeatM - 1>{});
+                last_softmax.rescale_o(last_o, scores_scale);
+            }
+            issue_pv(Int<RepeatM - 1>{}, smem_pipe_read_v);
+            warpgroup_wait<0>();
+            pipeline_v.consumer_release(smem_pipe_read_v);
+            ++smem_pipe_read_v;
+            smem_pipe_read = smem_pipe_read_k;
+
+            if constexpr (HasQSmem) {
+                cutlass::arch::NamedBarrier::arrive(
+                    NumMmaThreadsQK + (Use_TMA_Q ? cutlass::NumThreadsPerWarp
+                                                 : NumProducerThreads),
+                    static_cast<uint32_t>(FwdNamedBarriers::QueryEmpty));
+            }
+            float const v_descale = !Is_FP8 || params.ptr_v_descale == nullptr
+                ? 1.f
+                : params.ptr_v_descale[bidb * get<0>(params.stride_v_descale)
+                    + bidh_kv * get<1>(params.stride_v_descale)];
+            cute::for_each(cute::make_int_sequence<RepeatM>{}, [&](auto r) {
+                constexpr int R = decltype(r)::value;
+                auto softmax_slice = softmax.template get_slice<R, RepeatM>();
+                auto final_scale = softmax_slice.finalize(v_descale);
+                Tensor tOrOSlice = get_o_slice(Int<R>{});
+                softmax_slice.rescale_o(tOrOSlice, final_scale);
+                if constexpr (Is_FP8 && !V_colmajor) {
+                    flash::permute_output_fp8(tOrOSlice);
+                }
+            });
+        } else
+#endif
         if constexpr (IntraWGOverlap) {
             Tensor tSrS = partition_fragment_C(tiled_mma_qk, select<0, 1>(TileShape_MNK{}));
             consumer_wait(pipeline_k, smem_pipe_read);
@@ -2718,6 +3026,36 @@ struct CollectiveMainloopFwdSm90 {
         ++work_idx;
         return true;
     }
+
+#if USE_MIX_WGMMA
+    // Separate public entry point for logical M tiles larger than the physical
+    // consumer-WG footprint. Common tensor/pipeline setup stays in
+    // mma_mix_wgmma(), whose RepeatM > 1 compile-time branch executes the
+    // flattened (K block, M repeat) overlap schedule. RepeatM == 1 never calls
+    // this entry point and continues to instantiate the original branch.
+    template <bool ReleaseKV = true, typename SharedStorage, typename FrgTensorO,
+              typename FrgTensorQ, typename Softmax>
+    CUTLASS_DEVICE bool
+    mma_mix_wgmma_repeat(Params const& params,
+        MainloopPipelineK pipeline_k,
+        MainloopPipelineV pipeline_v,
+        PipelineState& smem_pipe_read,
+        FrgTensorO& tOrO,
+        FrgTensorQ& tRrQ,
+        Softmax& softmax,
+        int const thread_idx,
+        int &work_idx,
+        SeqlenInfo_t const& seqlen_info,
+        cute::tuple<int32_t, int32_t, int32_t, int32_t> block_coord,
+        SharedStorage& shared_storage) {
+        static_assert(RepeatM > 1,
+                      "repeat entry point requires more than one M slice");
+        return mma_mix_wgmma<ReleaseKV>(
+            params, pipeline_k, pipeline_v, smem_pipe_read, tOrO, tRrQ,
+            softmax, thread_idx, work_idx, seqlen_info, block_coord,
+            shared_storage);
+    }
+#endif
 
     template <typename SharedStorage, typename FrgTensorO, typename Softmax>
     CUTLASS_DEVICE bool

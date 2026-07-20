@@ -448,9 +448,14 @@ struct CollectiveEpilogueFwd {
                                   !is_split ? params.stride_LSE_packed : params.stride_LSE_partial_packed)(_, bidh, !is_varlen ? bidb : 0, !is_split ? 0 : split_idx);
         Tensor gLSE = local_tile(mLSE, Shape<Int<kBlockM>>{}, make_coord(m_block));
 
-        static_assert(kBlockM <= NumEpilogueThreads);
-        if (thread_idx < kBlockM) {
-            const int row = m_block * kBlockM + thread_idx;
+        // Repeated-M configurations can have more logical rows than epilogue
+        // threads. Distribute the rows cyclically instead of requiring one
+        // thread per row. The tiled GlobalO zero store below already supports
+        // multiple rows per thread.
+        #pragma unroll
+        for (int row_in_tile = thread_idx; row_in_tile < kBlockM;
+             row_in_tile += NumEpilogueThreads) {
+            const int row = m_block * kBlockM + row_in_tile;
             if constexpr (!PackGQA) {
                 if (row < seqlen_o) { mLSE(row) = -INFINITY; }
             } else {
