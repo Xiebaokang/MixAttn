@@ -106,6 +106,51 @@ bm256_bn96_st3_prd24_cra240_p6_q0_nc2_sb0_rb0
 | `sb` | 是否使用 warp scheduler barrier |
 | `rb` | 是否在 GEMM 前 rescale O |
 
+### FP8 P SMEM/寄存器混合路径
+
+FP8 和 FP16 都会生成完整的 P prefix 候选：
+
+```text
+p_smem_k_tiles = 0 ... BN / MMA_K
+```
+
+其中 FP8 的 `MMA_K=32`，FP16 的 `MMA_K=16`。因此在当前
+`BN <= 256` 的搜索范围内，FP8 的 `p` 最大为 8：
+
+```text
+p = 0       ：P 全部保留在寄存器中，PV 使用纯 RS WGMMA
+0 < p < max ：P prefix 使用 SS，剩余部分使用 RS
+p = max     ：P 全部写入 SMEM，PV 使用纯 SS WGMMA
+```
+
+FP16 使用 STSM 将寄存器中的 P 写入 SMEM。Hopper 的 STSM
+不能直接表达 FP8 的字节布局，因此 FP8 使用独立的 SIMT store 路径：
+
+1. 将 QK accumulator 重排为 PV operand A 的线程所有权；
+2. 将 FP32 softmax 结果转换为 FP8；
+3. 每个线程按照 `partition_A(identity)` 得到的坐标写入 swizzled SMEM；
+4. 在 SS-PV 前完成 shared-memory fence 和 warp-local 同步。
+
+FP8 P prefix 会根据 V 支持的布局分解为一个或多个 SW128、SW64 和
+SW32 区域，每个区域使用独立的 SMEM descriptor。例如：
+
+```text
+p=1：SW32
+p=2：SW64（或 V 仅支持 SW32 时使用 SW32）
+p=3：SW64 + SW32（或完整 SW32 区域）
+p=4：SW128（或按 V 支持的较窄 swizzle 分解）
+```
+
+配置生成器会为 FP8 枚举 `range(BN // 32 + 1)`，随后再根据 SMEM、
+寄存器容量及其他资源约束过滤候选。旧 result JSON 和已经生成的 CUDA
+源码不会自动加入新的 `p` 候选。修改候选生成规则后应重新运行 tune；如果
+只修改了 kernel，可以在验证旧结果时使用 `--recompile` 重新构建原有配置。
+
+`ptxas` 的 `insufficient register resources` / `Potential Performance Loss`
+表示 WGMMA 可能被串行化，是性能警告而不是数值错误。当前调优流程会将
+这类目标记录为 `performance_warning`，并排除在成功候选之外；仍可直接对
+生成的 executable 使用 `--verify` 检查正确性。
+
 MIX-WGMMA repeated-M 路径满足：
 
 ```text
