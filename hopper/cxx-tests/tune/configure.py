@@ -451,14 +451,11 @@ def mix_wgmma_base_configs(
                         continue
 
                     p_total_tiles = bn // mma_k
-                    # FP8 PV currently keeps P entirely in registers.  An FP8
-                    # shared-memory prefix needs a byte-accurate layout mapping
-                    # for the SS operand; ordinary logical-coordinate stores do
-                    # not match that descriptor.
-                    p_smem_candidates = (
-                        (0,) if elem_width == 1
-                        else range(p_total_tiles + 1)
-                    )
+                    # Both FP16 and FP8 support the complete P-prefix range.
+                    # FP8 uses ordinary SIMT stores and decomposes the prefix
+                    # into the widest layouts supported by V: SW128, SW64,
+                    # then SW32.
+                    p_smem_candidates = range(p_total_tiles + 1)
                     for p_smem_k_tiles in p_smem_candidates:
                         for q_reg_k_tiles in range(q_total_tiles + 1):
                             smem_size = _smem_size_bytes(

@@ -186,10 +186,11 @@ struct CollectiveMainloopFwdSm90 {
     static constexpr bool HasP32 = P32KTiles > 0;
     static constexpr bool HasPSmem = PSmemKTiles > 0;
     static constexpr bool HasPReg = PRegKTiles > 0;
-    // FP8 SS-PV is disabled until the byte-accurate mapping from QK
-    // accumulator ownership to the PV shared-memory operand is implemented.
-    static_assert(!Is_FP8 || PSmemKTiles == 0,
-                  "FP8 PV currently requires p_smem_k_tiles == 0");
+    // FP8 supports the complete prefix range. The decomposition above keeps
+    // every P region no wider than the swizzle supported by V, and the SIMT
+    // store path below handles each non-empty region independently.
+    static_assert(P128KTiles + P64KTiles + P32KTiles == PSmemKTiles,
+                  "P SMEM decomposition must cover the complete prefix");
     static constexpr int P128Cols = P128KTiles * MmaK;
     static constexpr int P64Cols = P64KTiles * MmaK;
     static constexpr int P32Cols = P32KTiles * MmaK;
@@ -2510,35 +2511,76 @@ struct CollectiveMainloopFwdSm90 {
 
 #if USE_MIX_WGMMA
         // Avoid materializing a full low-precision P fragment. FP16/BF16 keep
-        // the STSM path. Hopper has no FP8 STSM, so FP8 uses the logical QK
-        // accumulator coordinates and ordinary shared stores instead of an
-        // invalid uint16_t recast of a b8 swizzled tensor.
+        // the existing STSM path unchanged. Hopper has no FP8 STSM, so each
+        // FP8 prefix region is first rearranged into PV-A register ownership
+        // and then written with ordinary SIMT shared stores.
         auto convert_store_P_smem_prefix = [&](auto& tSrS) {
             if constexpr (Is_FP8) {
-                auto thread_mma_qk = tiled_mma_qk.get_thread_slice(thread_idx);
-                Tensor cS = cute::make_identity_tensor(
-                    Shape<Int<PBlockM>, Int<kBlockN>>{});
-                Tensor tScS = thread_mma_qk.partition_C(cS);
-                Tensor tScS_rowcol = make_tensor(
-                    tScS.data(), flash::convert_layout_acc_rowcol(tScS.layout()));
-                Tensor tSrS_rowcol = make_tensor(
-                    tSrS.data(), flash::convert_layout_acc_rowcol(tSrS.layout()));
-                static_assert(CUTE_STATIC_V(size(tScS_rowcol)) ==
-                              CUTE_STATIC_V(size(tSrS_rowcol)));
-                cutlass::NumericConverter<Element, ElementAccum> convert;
-                CUTLASS_PRAGMA_UNROLL
-                for (int m = 0; m < size<0>(tSrS_rowcol); ++m) {
+                Tensor tOrPAcc = make_tensor(
+                    tSrS.data(),
+                    flash::convert_layout_acc_Aregs<TiledMmaPV>(tSrS.layout()));
+                auto convert_store_region = [&](auto& sPRegion,
+                                                auto const& tOrPPlaceholder,
+                                                auto start_tile,
+                                                auto ncols) {
+                    constexpr int StartTile = decltype(start_tile)::value;
+                    constexpr int NCols = decltype(ncols)::value;
+                    Tensor tOrPStore =
+                        make_tensor_like<Element>(tOrPPlaceholder);
+                    constexpr int MmaTileCount =
+                        CUTE_STATIC_V(size<2>(tOrPStore));
+                    cute::for_each(
+                        cute::make_int_sequence<MmaTileCount>{},
+                        [&](auto tile_idx) {
+                            constexpr int SrcTile =
+                                StartTile + decltype(tile_idx)::value;
+                            Tensor tOrPAccTile =
+                                tOrPAcc(_, _, Int<SrcTile>{});
+                            Tensor tOrPStoreTile =
+                                tOrPStore(_, _, tile_idx);
+                            static_assert(
+                                CUTE_STATIC_V(size(tOrPAccTile)) ==
+                                CUTE_STATIC_V(size(tOrPStoreTile)));
+                            Tensor tOrPAccView = make_tensor(
+                                tOrPAccTile.data(),
+                                tOrPStoreTile.layout());
+                            convert_type_out(tOrPAccView,
+                                             tOrPStoreTile);
+                            if constexpr (V_colmajor) {
+                                flash::permute_Aregs_fp8(tOrPStoreTile);
+                            }
+                        });
+
+                    // partition_A(identity) describes the logical coordinates
+                    // owned by this PV register operand. Indexing the swizzled
+                    // destination with them gives the physical SS-PV layout.
+                    Tensor cP = cute::make_identity_tensor(
+                        Shape<Int<PBlockM>, Int<NCols>>{});
+                    Tensor tOcP = thread_mma_pv.partition_A(cP);
+                    static_assert(CUTE_STATIC_V(size(tOcP)) ==
+                                  CUTE_STATIC_V(size(tOrPStore)));
                     CUTLASS_PRAGMA_UNROLL
-                    for (int n = 0; n < size<1>(tSrS_rowcol); ++n) {
-                        int const row = int(get<0>(tScS_rowcol(m, n)));
-                        int const col = int(get<1>(tScS_rowcol(m, n)));
-                        if (col < PSmemCols) {
-                            // The one-tile FP8 prefix is always an SW32 region.
-                            static_assert(!HasPSmem ||
-                                          (HasP32 && !HasP64 && !HasP128));
-                            sP32(row, col) = convert(tSrS_rowcol(m, n));
-                        }
+                    for (int i = 0; i < size(tOrPStore); ++i) {
+                        auto const coord = tOcP(i);
+                        sPRegion(get<0>(coord), get<1>(coord)) =
+                            tOrPStore(i);
                     }
+                };
+
+                if constexpr (HasP128) {
+                    convert_store_region(sP128, tOrP128Placeholder,
+                                         Int<0>{}, Int<P128ColsSafe>{});
+                }
+                if constexpr (HasP64) {
+                    convert_store_region(sP64, tOrP64Placeholder,
+                                         Int<P128KTiles>{},
+                                         Int<P64ColsSafe>{});
+                }
+                if constexpr (HasP32) {
+                    constexpr int StartTile = P128KTiles + P64KTiles;
+                    convert_store_region(sP32, tOrP32Placeholder,
+                                         Int<StartTile>{},
+                                         Int<P32ColsSafe>{});
                 }
             } else {
                 Tensor tOrPAcc = make_tensor(
@@ -2622,8 +2664,8 @@ struct CollectiveMainloopFwdSm90 {
             constexpr bool Is_first = decltype(is_first_type)::value;
             if constexpr (Is_FP8 && !V_colmajor) {
                 softmax.template online_softmax_reduce<Is_first>(tSrS);
-                convert_store_P_smem_prefix(tSrS);
                 flash::permute_Cregs_fp8(tSrS);
+                convert_store_P_smem_prefix(tSrS);
                 convert_P_reg_suffix(tSrS, tOrP);
             } else {
                 convert_store_P_smem_prefix(tSrS);
@@ -2712,6 +2754,9 @@ struct CollectiveMainloopFwdSm90 {
             if constexpr (!HasPSmem) {
                 flash::gemm<ZeroInit, /*wg_wait=*/-1>(tiled_mma_pv, tP, tVRS, tO);
             } else {
+                if constexpr (Is_FP8) {
+                    cutlass::arch::fence_view_async_shared();
+                }
                 __syncwarp();
                 flash::gemmPV<HasP128, HasP64, HasP32, HasPReg,
                               /*PRegIsCompact=*/true,
@@ -2826,6 +2871,9 @@ struct CollectiveMainloopFwdSm90 {
                 if constexpr (HasPSmem) {
                     softmax_slice.template online_softmax_exp<true>(tSrS);
                     softmax_slice.template online_softmax_reduce<IsFirst>(tSrS);
+                    if constexpr (Is_FP8 && !V_colmajor) {
+                        flash::permute_Cregs_fp8(tSrS);
+                    }
                 } else {
                     softmax_slice.template online_softmax<IsFirst, true>(tSrS);
                     if constexpr (Is_FP8 && !V_colmajor) {
@@ -2838,9 +2886,6 @@ struct CollectiveMainloopFwdSm90 {
             auto materialize_p = [&] {
                 if constexpr (HasPSmem) {
                     convert_store_P_smem_prefix(tSrS);
-                    if constexpr (Is_FP8 && !V_colmajor) {
-                        flash::permute_Cregs_fp8(tSrS);
-                    }
                     convert_P_reg_suffix(tSrS, tOrP);
                 } else {
                     convert_type_out(tOrPAcc, tOrP);

@@ -825,14 +825,33 @@ def run_interface(
         mode=mode,
     )
 
-if __name__ == "__main__":
-    shape = (1, 16, 32768, 64)
-    dtype = DType.FP8
-    causal = False
-    cfg1 = TConfig(384, 128, 1, 24, 240, 0, 1, 2, 0, 0)
-    # cfg2 = TConfig(128, 64, 2, 24, 240, 4, 0, 2, 0, 0)
-    # cfg3 = TConfig(256, 64, 2, 24, 240, 4, 0, 2, 0, 0)
-    # cfg4 = TConfig(256, 64, 2, 24, 112, 4, 0, 4, 0, 0)
-    # cfg4 = TConfig(256, 96, 2, 24, 240, 0, 0, 2, 1, 1)
-    result_dir = HERE / "results"
-    run_interface(shape=shape, dtype=dtype, causal=causal, configs=[cfg1], result_dir=result_dir)
+# if __name__ == "__main__":
+#     shape = (1, 16, 32768, 64)
+#     dtype = DType.FP8
+#     causal = False
+#     # p=5，全SW32，纯SS-PV
+#     cfg1 = TConfig(128, 160, 2, 24, 240, 5, 0, 2, 0, 0)
+
+#     # p=5，SW128+SW32+RS
+#     cfg2 = TConfig(256, 256, 2, 24, 240, 5, 1, 2, 0, 0)
+
+#     # p=6，全SW64，纯SS-PV
+#     cfg3 = TConfig(128, 192, 2, 24, 240, 6, 0, 2, 0, 0)
+
+#     # p=6，SW128+SW64+RS
+#     cfg4 = TConfig(256, 256, 2, 24, 240, 6, 1, 2, 0, 0)
+
+#     # p=7，全SW32，纯SS-PV
+#     cfg5 = TConfig(128, 224, 3, 24, 240, 7, 0, 2, 0, 0)
+
+#     # p=7，SW128+SW64+SW32+RS，RepeatM=3、stage1
+#     cfg6 = TConfig(384, 256, 1, 24, 240, 7, 1, 2, 0, 0)
+
+#     # p=8，全SW128，纯SS-PV
+#     cfg7 = TConfig(128, 256, 2, 24, 240, 8, 0, 2, 0, 0)
+
+#     configs = [cfg1, cfg2, cfg3, cfg4, cfg5, cfg6, cfg7]
+
+#     configs = [cfg1, cfg2, cfg3, cfg4]
+#     result_dir = HERE / "results"
+#     run_interface(shape=shape, dtype=dtype, causal=causal, configs=configs, result_dir=result_dir)
