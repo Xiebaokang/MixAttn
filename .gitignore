@@ -71,4 +71,4 @@ Testing/
 # Tuning sources
 /hopper/cxx-tests/tune/src/
 /hopper/cxx-tests/tune/log*
-/hopper/cxx_tests/__pycache__
+/hopper/cxx_tests/tune/__pycache__/
