@@ -1,0 +1,317 @@
+{
+  "shape": {
+    "B": 1,
+    "H": 16,
+    "S": 30720,
+    "D": 64
+  },
+  "dtype": "fp8",
+  "causal": true,
+  "total_configs": 15,
+  "successful": 15,
+  "failed": 0,
+  "ranked": 15,
+  "top_results": [
+    {
+      "rank": 1,
+      "config": {
+        "kBlockM": 192,
+        "kBlockN": 128,
+        "kStage": 2,
+        "producer_reg_dealloc": 24,
+        "consumer_reg_alloc": 152,
+        "p_smem_k_tiles": 0,
+        "q_reg_k_tiles": 2,
+        "num_consumer": 3,
+        "use_scheduler_barrier": 0,
+        "rescale_o_before_gemm": 0
+      },
+      "executable": "/home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cxx-tests/tune/src/test_b1_h16_s30720_d64_fp8_causal/build/rl10/bin/bm192_bn128_st2_prd24_cra152_p0_q2_nc3_sb0_rb0",
+      "time_ms": 4.07,
+      "tflops": 474.9,
+      "smem_size": 59392,
+      "reg_size": 208896
+    },
+    {
+      "rank": 2,
+      "config": {
+        "kBlockM": 192,
+        "kBlockN": 128,
+        "kStage": 3,
+        "producer_reg_dealloc": 24,
+        "consumer_reg_alloc": 144,
+        "p_smem_k_tiles": 0,
+        "q_reg_k_tiles": 1,
+        "num_consumer": 3,
+        "use_scheduler_barrier": 0,
+        "rescale_o_before_gemm": 0
+      },
+      "executable": "/home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cxx-tests/tune/src/test_b1_h16_s30720_d64_fp8_causal/build/rl10/bin/bm192_bn128_st3_prd24_cra144_p0_q1_nc3_sb0_rb0",
+      "time_ms": 4.079,
+      "tflops": 473.86,
+      "smem_size": 82944,
+      "reg_size": 208896
+    },
+    {
+      "rank": 3,
+      "config": {
+        "kBlockM": 192,
+        "kBlockN": 128,
+        "kStage": 3,
+        "producer_reg_dealloc": 24,
+        "consumer_reg_alloc": 144,
+        "p_smem_k_tiles": 0,
+        "q_reg_k_tiles": 1,
+        "num_consumer": 3,
+        "use_scheduler_barrier": 1,
+        "rescale_o_before_gemm": 0
+      },
+      "executable": "/home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cxx-tests/tune/src/test_b1_h16_s30720_d64_fp8_causal/build/rl10/bin/bm192_bn128_st3_prd24_cra144_p0_q1_nc3_sb1_rb0",
+      "time_ms": 4.097,
+      "tflops": 471.74,
+      "smem_size": 82944,
+      "reg_size": 208896
+    },
+    {
+      "rank": 4,
+      "config": {
+        "kBlockM": 192,
+        "kBlockN": 128,
+        "kStage": 2,
+        "producer_reg_dealloc": 24,
+        "consumer_reg_alloc": 144,
+        "p_smem_k_tiles": 0,
+        "q_reg_k_tiles": 1,
+        "num_consumer": 3,
+        "use_scheduler_barrier": 1,
+        "rescale_o_before_gemm": 0
+      },
+      "executable": "/home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cxx-tests/tune/src/test_b1_h16_s30720_d64_fp8_causal/build/rl10/bin/bm192_bn128_st2_prd24_cra144_p0_q1_nc3_sb1_rb0",
+      "time_ms": 4.098,
+      "tflops": 471.59,
+      "smem_size": 65536,
+      "reg_size": 208896
+    },
+    {
+      "rank": 5,
+      "config": {
+        "kBlockM": 192,
+        "kBlockN": 128,
+        "kStage": 3,
+        "producer_reg_dealloc": 40,
+        "consumer_reg_alloc": 152,
+        "p_smem_k_tiles": 0,
+        "q_reg_k_tiles": 1,
+        "num_consumer": 3,
+        "use_scheduler_barrier": 0,
+        "rescale_o_before_gemm": 0
+      },
+      "executable": "/home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cxx-tests/tune/src/test_b1_h16_s30720_d64_fp8_causal/build/rl10/bin/bm192_bn128_st3_prd40_cra152_p0_q1_nc3_sb0_rb0",
+      "time_ms": 4.114,
+      "tflops": 469.84,
+      "smem_size": 82944,
+      "reg_size": 208896
+    },
+    {
+      "rank": 6,
+      "config": {
+        "kBlockM": 192,
+        "kBlockN": 128,
+        "kStage": 3,
+        "producer_reg_dealloc": 40,
+        "consumer_reg_alloc": 144,
+        "p_smem_k_tiles": 0,
+        "q_reg_k_tiles": 0,
+        "num_consumer": 3,
+        "use_scheduler_barrier": 0,
+        "rescale_o_before_gemm": 0
+      },
+      "executable": "/home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cxx-tests/tune/src/test_b1_h16_s30720_d64_fp8_causal/build/rl10/bin/bm192_bn128_st3_prd40_cra144_p0_q0_nc3_sb0_rb0",
+      "time_ms": 4.115,
+      "tflops": 469.67,
+      "smem_size": 89088,
+      "reg_size": 196608
+    },
+    {
+      "rank": 7,
+      "config": {
+        "kBlockM": 192,
+        "kBlockN": 128,
+        "kStage": 2,
+        "producer_reg_dealloc": 40,
+        "consumer_reg_alloc": 144,
+        "p_smem_k_tiles": 0,
+        "q_reg_k_tiles": 0,
+        "num_consumer": 3,
+        "use_scheduler_barrier": 0,
+        "rescale_o_before_gemm": 0
+      },
+      "executable": "/home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cxx-tests/tune/src/test_b1_h16_s30720_d64_fp8_causal/build/rl10/bin/bm192_bn128_st2_prd40_cra144_p0_q0_nc3_sb0_rb0",
+      "time_ms": 4.118,
+      "tflops": 469.31,
+      "smem_size": 71680,
+      "reg_size": 196608
+    },
+    {
+      "rank": 8,
+      "config": {
+        "kBlockM": 192,
+        "kBlockN": 128,
+        "kStage": 3,
+        "producer_reg_dealloc": 32,
+        "consumer_reg_alloc": 160,
+        "p_smem_k_tiles": 0,
+        "q_reg_k_tiles": 0,
+        "num_consumer": 3,
+        "use_scheduler_barrier": 0,
+        "rescale_o_before_gemm": 0
+      },
+      "executable": "/home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cxx-tests/tune/src/test_b1_h16_s30720_d64_fp8_causal/build/rl10/bin/bm192_bn128_st3_prd32_cra160_p0_q0_nc3_sb0_rb0",
+      "time_ms": 4.126,
+      "tflops": 468.39,
+      "smem_size": 89088,
+      "reg_size": 196608
+    },
+    {
+      "rank": 9,
+      "config": {
+        "kBlockM": 192,
+        "kBlockN": 128,
+        "kStage": 3,
+        "producer_reg_dealloc": 24,
+        "consumer_reg_alloc": 144,
+        "p_smem_k_tiles": 0,
+        "q_reg_k_tiles": 0,
+        "num_consumer": 3,
+        "use_scheduler_barrier": 0,
+        "rescale_o_before_gemm": 0
+      },
+      "executable": "/home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cxx-tests/tune/src/test_b1_h16_s30720_d64_fp8_causal/build/rl10/bin/bm192_bn128_st3_prd24_cra144_p0_q0_nc3_sb0_rb0",
+      "time_ms": 4.126,
+      "tflops": 468.37,
+      "smem_size": 89088,
+      "reg_size": 196608
+    },
+    {
+      "rank": 10,
+      "config": {
+        "kBlockM": 192,
+        "kBlockN": 128,
+        "kStage": 2,
+        "producer_reg_dealloc": 24,
+        "consumer_reg_alloc": 144,
+        "p_smem_k_tiles": 0,
+        "q_reg_k_tiles": 0,
+        "num_consumer": 3,
+        "use_scheduler_barrier": 0,
+        "rescale_o_before_gemm": 0
+      },
+      "executable": "/home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cxx-tests/tune/src/test_b1_h16_s30720_d64_fp8_causal/build/rl10/bin/bm192_bn128_st2_prd24_cra144_p0_q0_nc3_sb0_rb0",
+      "time_ms": 4.141,
+      "tflops": 466.71,
+      "smem_size": 71680,
+      "reg_size": 196608
+    },
+    {
+      "rank": 11,
+      "config": {
+        "kBlockM": 192,
+        "kBlockN": 128,
+        "kStage": 3,
+        "producer_reg_dealloc": 24,
+        "consumer_reg_alloc": 160,
+        "p_smem_k_tiles": 0,
+        "q_reg_k_tiles": 1,
+        "num_consumer": 3,
+        "use_scheduler_barrier": 0,
+        "rescale_o_before_gemm": 0
+      },
+      "executable": "/home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cxx-tests/tune/src/test_b1_h16_s30720_d64_fp8_causal/build/rl10/bin/bm192_bn128_st3_prd24_cra160_p0_q1_nc3_sb0_rb0",
+      "time_ms": 4.145,
+      "tflops": 466.25,
+      "smem_size": 82944,
+      "reg_size": 208896
+    },
+    {
+      "rank": 12,
+      "config": {
+        "kBlockM": 192,
+        "kBlockN": 128,
+        "kStage": 3,
+        "producer_reg_dealloc": 24,
+        "consumer_reg_alloc": 160,
+        "p_smem_k_tiles": 0,
+        "q_reg_k_tiles": 0,
+        "num_consumer": 3,
+        "use_scheduler_barrier": 0,
+        "rescale_o_before_gemm": 0
+      },
+      "executable": "/home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cxx-tests/tune/src/test_b1_h16_s30720_d64_fp8_causal/build/rl10/bin/bm192_bn128_st3_prd24_cra160_p0_q0_nc3_sb0_rb0",
+      "time_ms": 4.167,
+      "tflops": 463.85,
+      "smem_size": 89088,
+      "reg_size": 196608
+    },
+    {
+      "rank": 13,
+      "config": {
+        "kBlockM": 192,
+        "kBlockN": 128,
+        "kStage": 2,
+        "producer_reg_dealloc": 32,
+        "consumer_reg_alloc": 160,
+        "p_smem_k_tiles": 0,
+        "q_reg_k_tiles": 0,
+        "num_consumer": 3,
+        "use_scheduler_barrier": 0,
+        "rescale_o_before_gemm": 0
+      },
+      "executable": "/home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cxx-tests/tune/src/test_b1_h16_s30720_d64_fp8_causal/build/rl10/bin/bm192_bn128_st2_prd32_cra160_p0_q0_nc3_sb0_rb0",
+      "time_ms": 4.168,
+      "tflops": 463.72,
+      "smem_size": 71680,
+      "reg_size": 196608
+    },
+    {
+      "rank": 14,
+      "config": {
+        "kBlockM": 192,
+        "kBlockN": 128,
+        "kStage": 2,
+        "producer_reg_dealloc": 40,
+        "consumer_reg_alloc": 144,
+        "p_smem_k_tiles": 0,
+        "q_reg_k_tiles": 0,
+        "num_consumer": 3,
+        "use_scheduler_barrier": 1,
+        "rescale_o_before_gemm": 0
+      },
+      "executable": "/home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cxx-tests/tune/src/test_b1_h16_s30720_d64_fp8_causal/build/rl10/bin/bm192_bn128_st2_prd40_cra144_p0_q0_nc3_sb1_rb0",
+      "time_ms": 4.234,
+      "tflops": 456.5,
+      "smem_size": 71680,
+      "reg_size": 196608
+    },
+    {
+      "rank": 15,
+      "config": {
+        "kBlockM": 192,
+        "kBlockN": 128,
+        "kStage": 3,
+        "producer_reg_dealloc": 40,
+        "consumer_reg_alloc": 144,
+        "p_smem_k_tiles": 0,
+        "q_reg_k_tiles": 0,
+        "num_consumer": 3,
+        "use_scheduler_barrier": 1,
+        "rescale_o_before_gemm": 0
+      },
+      "executable": "/home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cxx-tests/tune/src/test_b1_h16_s30720_d64_fp8_causal/build/rl10/bin/bm192_bn128_st3_prd40_cra144_p0_q0_nc3_sb1_rb0",
+      "time_ms": 4.244,
+      "tflops": 455.43,
+      "smem_size": 89088,
+      "reg_size": 196608
+    }
+  ],
+  "failed_results": []
+}

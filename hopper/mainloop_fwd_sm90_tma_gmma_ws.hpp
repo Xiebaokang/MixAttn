@@ -68,7 +68,7 @@ struct CollectiveMainloopFwdSm90 {
     static constexpr bool PackGQA = PackGQA_;
     static constexpr bool Split = Split_;
     static constexpr bool V_colmajor = V_colmajor_;
-    static constexpr bool Transpose_V = Is_FP8 && !V_colmajor;
+    static constexpr bool Transpose_V = Is_FP8 && !V_colmajor;   // 是FP8，且行优先的话，就需要转置V
     static constexpr bool Use_TMA_Q = !PackGQA;
     static constexpr bool Use_TMA_KV = !PagedKVNonTMA;
     static_assert(Use_TMA_KV || CUTE_STATIC_V(size(ClusterShape{})) == 1, "If not using TMA for KV, ClusterShape must be 1");
@@ -186,6 +186,10 @@ struct CollectiveMainloopFwdSm90 {
     static constexpr bool HasP32 = P32KTiles > 0;
     static constexpr bool HasPSmem = PSmemKTiles > 0;
     static constexpr bool HasPReg = PRegKTiles > 0;
+    // FP8 SS-PV is disabled until the byte-accurate mapping from QK
+    // accumulator ownership to the PV shared-memory operand is implemented.
+    static_assert(!Is_FP8 || PSmemKTiles == 0,
+                  "FP8 PV currently requires p_smem_k_tiles == 0");
     static constexpr int P128Cols = P128KTiles * MmaK;
     static constexpr int P64Cols = P64KTiles * MmaK;
     static constexpr int P32Cols = P32KTiles * MmaK;
@@ -200,7 +204,7 @@ struct CollectiveMainloopFwdSm90 {
 #endif
 
 #if USE_MIX_WGMMA
-    static constexpr bool StorePInSmem = HasPSmem;
+    static constexpr bool StorePInSmem = HasPSmem;   // 默认true
 #else
     static constexpr bool StorePInSmem = !MmaPV_is_RS;
 #endif
@@ -296,6 +300,22 @@ struct CollectiveMainloopFwdSm90 {
     using SmemLayoutQ = decltype(tile_to_shape(SmemLayoutAtomQ{}, select<0, 2>(TileShape_MNK{})));
 
 #if USE_MIX_WGMMA
+    // Hopper tensor-map box dimensions are limited to 256 elements.  Keep the
+    // logical Q tile intact in shared memory, but describe BM > 256 as a
+    // 256-row prefix followed by one tail transaction.
+    static constexpr int TmaMaxBoxM = 256;
+    static constexpr bool SplitTmaM = kBlockM > TmaMaxBoxM;
+    static constexpr int TmaPrefixM = SplitTmaM ? TmaMaxBoxM : kBlockM;
+    // Use a valid full-tile placeholder when the tail is inactive: CUTE
+    // instantiates layout aliases before std::conditional_t discards them.
+    static constexpr int TmaTailM = SplitTmaM ? kBlockM - TmaMaxBoxM : kBlockM;
+    static_assert(kBlockM <= 2 * TmaMaxBoxM,
+                  "BM larger than 512 requires more than two Q TMA transactions");
+    using SmemLayoutQPrefix = decltype(tile_to_shape(
+        SmemLayoutAtomQ{}, Shape<Int<TmaPrefixM>, Int<kHeadDim>>{}));
+    using SmemLayoutQTail = decltype(tile_to_shape(
+        SmemLayoutAtomQ{}, Shape<Int<TmaTailM>, Int<kHeadDim>>{}));
+
     template <int KCols>
     using SmemLayoutAtomQPart = decltype(cutlass::gemm::collective::detail::ss_smem_selector<
         GMMA::Major::K, Element, Int<kBlockM>, Int<KCols>>());
@@ -305,6 +325,15 @@ struct CollectiveMainloopFwdSm90 {
     using SmemLayoutQ128 = SmemLayoutQPart<Q128ColsSafe>;
     using SmemLayoutQ64 = SmemLayoutQPart<Q64ColsSafe>;
     using SmemLayoutQ32 = SmemLayoutQPart<Q32ColsSafe>;
+    template <int KCols, int MRows>
+    using SmemLayoutQPartRows = decltype(tile_to_shape(
+        SmemLayoutAtomQPart<KCols>{}, Shape<Int<MRows>, Int<KCols>>{}));
+    using SmemLayoutQ128Prefix = SmemLayoutQPartRows<Q128ColsSafe, TmaPrefixM>;
+    using SmemLayoutQ128Tail = SmemLayoutQPartRows<Q128ColsSafe, TmaTailM>;
+    using SmemLayoutQ64Prefix = SmemLayoutQPartRows<Q64ColsSafe, TmaPrefixM>;
+    using SmemLayoutQ64Tail = SmemLayoutQPartRows<Q64ColsSafe, TmaTailM>;
+    using SmemLayoutQ32Prefix = SmemLayoutQPartRows<Q32ColsSafe, TmaPrefixM>;
+    using SmemLayoutQ32Tail = SmemLayoutQPartRows<Q32ColsSafe, TmaTailM>;
     static constexpr int Q128SmemOffset = 0;
     static constexpr int Q64SmemOffset = HasQ128 ? cute::cosize_v<SmemLayoutQ128> : 0;
     static constexpr int Q32SmemOffset = Q64SmemOffset + (HasQ64 ? cute::cosize_v<SmemLayoutQ64> : 0);
@@ -376,6 +405,9 @@ struct CollectiveMainloopFwdSm90 {
     static constexpr int P64SmemOffset = HasP128 ? cute::cosize_v<SmemLayoutP128> : 0;
     static constexpr int P32SmemOffset = P64SmemOffset + (HasP64 ? cute::cosize_v<SmemLayoutP64> : 0);
     static constexpr int PSmemElements = PBlockM * PSmemCols;
+    static_assert(P32SmemOffset + (HasP32 ? cute::cosize_v<SmemLayoutP32> : 0)
+                      <= PSmemElements,
+                  "decomposed P SMEM layouts exceed the allocated P buffer");
 #endif
 
     // Only for LargeHeadDimV where WG0 sends WG1 the scales
@@ -483,20 +515,36 @@ struct CollectiveMainloopFwdSm90 {
         ClusterShape{}));
 
 #if USE_MIX_WGMMA
-    template <int KCols, class SmemLayout>
+    template <int MRows, int KCols, class SmemLayout>
     using TMA_Q_Part = decltype(make_tma_copy_A_sm90(
         GmemTiledCopyQ{},
         make_tensor(make_gmem_ptr(static_cast<Element const*>(nullptr)), ShapeQKV{}, StrideQK{}),
         SmemLayout{},
-        Shape<Int<kBlockM>, Int<kBlockN>, Int<KCols>>{},
+        Shape<Int<MRows>, Int<kBlockN>, Int<KCols>>{},
         ClusterShape{}));
-    using TMA_Q128 = TMA_Q_Part<Q128ColsSafe, SmemLayoutQ128>;
-    using TMA_Q64 = TMA_Q_Part<Q64ColsSafe, SmemLayoutQ64>;
-    using TMA_Q32 = TMA_Q_Part<Q32ColsSafe, SmemLayoutQ32>;
-    using TMA_QActive = std::conditional_t<!HasQReg, TMA_Q, std::nullptr_t>;
-    using TMA_Q128Active = std::conditional_t<HasQ128, TMA_Q128, std::nullptr_t>;
-    using TMA_Q64Active = std::conditional_t<HasQ64, TMA_Q64, std::nullptr_t>;
-    using TMA_Q32Active = std::conditional_t<HasQ32, TMA_Q32, std::nullptr_t>;
+    using TMA_Q128 = TMA_Q_Part<kBlockM, Q128ColsSafe, SmemLayoutQ128>;
+    using TMA_Q64 = TMA_Q_Part<kBlockM, Q64ColsSafe, SmemLayoutQ64>;
+    using TMA_Q32 = TMA_Q_Part<kBlockM, Q32ColsSafe, SmemLayoutQ32>;
+    using TMA_QPrefix = TMA_Q_Part<TmaPrefixM, kHeadDim, SmemLayoutQPrefix>;
+    using TMA_QTail = TMA_Q_Part<TmaTailM, kHeadDim, SmemLayoutQTail>;
+    using TMA_Q128Prefix = TMA_Q_Part<TmaPrefixM, Q128ColsSafe, SmemLayoutQ128Prefix>;
+    using TMA_Q128Tail = TMA_Q_Part<TmaTailM, Q128ColsSafe, SmemLayoutQ128Tail>;
+    using TMA_Q64Prefix = TMA_Q_Part<TmaPrefixM, Q64ColsSafe, SmemLayoutQ64Prefix>;
+    using TMA_Q64Tail = TMA_Q_Part<TmaTailM, Q64ColsSafe, SmemLayoutQ64Tail>;
+    using TMA_Q32Prefix = TMA_Q_Part<TmaPrefixM, Q32ColsSafe, SmemLayoutQ32Prefix>;
+    using TMA_Q32Tail = TMA_Q_Part<TmaTailM, Q32ColsSafe, SmemLayoutQ32Tail>;
+    using TMA_QActive = std::conditional_t<!HasQReg && !SplitTmaM, TMA_Q, std::nullptr_t>;
+    using TMA_Q128Active = std::conditional_t<HasQ128 && !SplitTmaM, TMA_Q128, std::nullptr_t>;
+    using TMA_Q64Active = std::conditional_t<HasQ64 && !SplitTmaM, TMA_Q64, std::nullptr_t>;
+    using TMA_Q32Active = std::conditional_t<HasQ32 && !SplitTmaM, TMA_Q32, std::nullptr_t>;
+    using TMA_QPrefixActive = std::conditional_t<!HasQReg && SplitTmaM, TMA_QPrefix, std::nullptr_t>;
+    using TMA_QTailActive = std::conditional_t<!HasQReg && SplitTmaM, TMA_QTail, std::nullptr_t>;
+    using TMA_Q128PrefixActive = std::conditional_t<HasQ128 && SplitTmaM, TMA_Q128Prefix, std::nullptr_t>;
+    using TMA_Q128TailActive = std::conditional_t<HasQ128 && SplitTmaM, TMA_Q128Tail, std::nullptr_t>;
+    using TMA_Q64PrefixActive = std::conditional_t<HasQ64 && SplitTmaM, TMA_Q64Prefix, std::nullptr_t>;
+    using TMA_Q64TailActive = std::conditional_t<HasQ64 && SplitTmaM, TMA_Q64Tail, std::nullptr_t>;
+    using TMA_Q32PrefixActive = std::conditional_t<HasQ32 && SplitTmaM, TMA_Q32Prefix, std::nullptr_t>;
+    using TMA_Q32TailActive = std::conditional_t<HasQ32 && SplitTmaM, TMA_Q32Tail, std::nullptr_t>;
 #endif
 
     using TMA_K = decltype(make_tma_copy_B_sm90(
@@ -771,6 +819,14 @@ struct CollectiveMainloopFwdSm90 {
         TMA_Q128Active tma_load_Q128;
         TMA_Q64Active tma_load_Q64;
         TMA_Q32Active tma_load_Q32;
+        TMA_QPrefixActive tma_load_Q_prefix;
+        TMA_QTailActive tma_load_Q_tail;
+        TMA_Q128PrefixActive tma_load_Q128_prefix;
+        TMA_Q128TailActive tma_load_Q128_tail;
+        TMA_Q64PrefixActive tma_load_Q64_prefix;
+        TMA_Q64TailActive tma_load_Q64_tail;
+        TMA_Q32PrefixActive tma_load_Q32_prefix;
+        TMA_Q32TailActive tma_load_Q32_tail;
 #else
         TMA_Q tma_load_Q;
 #endif
@@ -800,32 +856,64 @@ struct CollectiveMainloopFwdSm90 {
         Tensor mQ = make_tensor(make_gmem_ptr(args.ptr_Q), args.shape_Q, args.stride_Q);
 #if USE_MIX_WGMMA
         auto tma_load_Q = [&] {
-            if constexpr (!HasQReg) {
+            if constexpr (!HasQReg && !SplitTmaM) {
                 return make_tma_copy_A_sm90(GmemTiledCopyQ{}, mQ, SmemLayoutQ{},
                                             TileShape_MNK{}, ClusterShape{});
             } else { return nullptr; }
         }();
         auto tma_load_Q128 = [&] {
-            if constexpr (HasQ128) {
+            if constexpr (HasQ128 && !SplitTmaM) {
                 return make_tma_copy_A_sm90(
                     GmemTiledCopyQ{}, mQ, SmemLayoutQ128{},
                     Shape<Int<kBlockM>, Int<kBlockN>, Int<Q128ColsSafe>>{}, ClusterShape{});
             } else { return nullptr; }
         }();
         auto tma_load_Q64 = [&] {
-            if constexpr (HasQ64) {
+            if constexpr (HasQ64 && !SplitTmaM) {
                 return make_tma_copy_A_sm90(
                     GmemTiledCopyQ{}, mQ, SmemLayoutQ64{},
                     Shape<Int<kBlockM>, Int<kBlockN>, Int<Q64ColsSafe>>{}, ClusterShape{});
             } else { return nullptr; }
         }();
         auto tma_load_Q32 = [&] {
-            if constexpr (HasQ32) {
+            if constexpr (HasQ32 && !SplitTmaM) {
                 return make_tma_copy_A_sm90(
                     GmemTiledCopyQ{}, mQ, SmemLayoutQ32{},
                     Shape<Int<kBlockM>, Int<kBlockN>, Int<Q32ColsSafe>>{}, ClusterShape{});
             } else { return nullptr; }
         }();
+        auto tma_load_Q_prefix = [&] {
+            if constexpr (!HasQReg && SplitTmaM) {
+                return make_tma_copy_A_sm90(GmemTiledCopyQ{}, mQ, SmemLayoutQPrefix{},
+                    Shape<Int<TmaPrefixM>, Int<kBlockN>, Int<kHeadDim>>{}, ClusterShape{});
+            } else { return nullptr; }
+        }();
+        auto tma_load_Q_tail = [&] {
+            if constexpr (!HasQReg && SplitTmaM) {
+                return make_tma_copy_A_sm90(GmemTiledCopyQ{}, mQ, SmemLayoutQTail{},
+                    Shape<Int<TmaTailM>, Int<kBlockN>, Int<kHeadDim>>{}, ClusterShape{});
+            } else { return nullptr; }
+        }();
+#define FLASH_MAKE_SPLIT_Q_TMA(NAME, ENABLED, MROWS, KCOLS, LAYOUT) \
+        auto NAME = [&] { \
+            if constexpr (ENABLED) { \
+                return make_tma_copy_A_sm90(GmemTiledCopyQ{}, mQ, LAYOUT{}, \
+                    Shape<Int<MROWS>, Int<kBlockN>, Int<KCOLS>>{}, ClusterShape{}); \
+            } else { return nullptr; } \
+        }()
+        FLASH_MAKE_SPLIT_Q_TMA(tma_load_Q128_prefix, HasQ128 && SplitTmaM,
+                               TmaPrefixM, Q128ColsSafe, SmemLayoutQ128Prefix);
+        FLASH_MAKE_SPLIT_Q_TMA(tma_load_Q128_tail, HasQ128 && SplitTmaM,
+                               TmaTailM, Q128ColsSafe, SmemLayoutQ128Tail);
+        FLASH_MAKE_SPLIT_Q_TMA(tma_load_Q64_prefix, HasQ64 && SplitTmaM,
+                               TmaPrefixM, Q64ColsSafe, SmemLayoutQ64Prefix);
+        FLASH_MAKE_SPLIT_Q_TMA(tma_load_Q64_tail, HasQ64 && SplitTmaM,
+                               TmaTailM, Q64ColsSafe, SmemLayoutQ64Tail);
+        FLASH_MAKE_SPLIT_Q_TMA(tma_load_Q32_prefix, HasQ32 && SplitTmaM,
+                               TmaPrefixM, Q32ColsSafe, SmemLayoutQ32Prefix);
+        FLASH_MAKE_SPLIT_Q_TMA(tma_load_Q32_tail, HasQ32 && SplitTmaM,
+                               TmaTailM, Q32ColsSafe, SmemLayoutQ32Tail);
+#undef FLASH_MAKE_SPLIT_Q_TMA
 #else
         TMA_Q tma_load_Q = make_tma_copy_A_sm90(
             GmemTiledCopyQ{}, mQ, SmemLayoutQ{}, TileShape_MNK{}, ClusterShape{});
@@ -920,6 +1008,10 @@ struct CollectiveMainloopFwdSm90 {
                 cutlass::FastDivmod(cute::ceil_div(get<2>(args.shape_Q), get<2>(args.shape_K))),
 #if USE_MIX_WGMMA
                 tma_load_Q, tma_load_Q128, tma_load_Q64, tma_load_Q32,
+                tma_load_Q_prefix, tma_load_Q_tail,
+                tma_load_Q128_prefix, tma_load_Q128_tail,
+                tma_load_Q64_prefix, tma_load_Q64_tail,
+                tma_load_Q32_prefix, tma_load_Q32_tail,
 #else
                 tma_load_Q,
 #endif
@@ -940,7 +1032,25 @@ struct CollectiveMainloopFwdSm90 {
     static void prefetch_tma_descriptors(Params const& params) {
         if constexpr (Use_TMA_Q) {
 #if USE_MIX_WGMMA
-            if constexpr (!HasQReg) {
+            if constexpr (SplitTmaM) {
+                if constexpr (!HasQReg) {
+                    cute::prefetch_tma_descriptor(params.tma_load_Q_prefix.get_tma_descriptor());
+                    cute::prefetch_tma_descriptor(params.tma_load_Q_tail.get_tma_descriptor());
+                } else {
+                    if constexpr (HasQ128) {
+                        cute::prefetch_tma_descriptor(params.tma_load_Q128_prefix.get_tma_descriptor());
+                        cute::prefetch_tma_descriptor(params.tma_load_Q128_tail.get_tma_descriptor());
+                    }
+                    if constexpr (HasQ64) {
+                        cute::prefetch_tma_descriptor(params.tma_load_Q64_prefix.get_tma_descriptor());
+                        cute::prefetch_tma_descriptor(params.tma_load_Q64_tail.get_tma_descriptor());
+                    }
+                    if constexpr (HasQ32) {
+                        cute::prefetch_tma_descriptor(params.tma_load_Q32_prefix.get_tma_descriptor());
+                        cute::prefetch_tma_descriptor(params.tma_load_Q32_tail.get_tma_descriptor());
+                    }
+                }
+            } else if constexpr (!HasQReg) {
                 cute::prefetch_tma_descriptor(params.tma_load_Q.get_tma_descriptor());
             } else {
                 if constexpr (HasQ128) { cute::prefetch_tma_descriptor(params.tma_load_Q128.get_tma_descriptor()); }
@@ -1000,6 +1110,14 @@ struct CollectiveMainloopFwdSm90 {
         Tensor sQ128 = make_tensor(make_smem_ptr(smem_q_ptr + Q128SmemOffset), SmemLayoutQ128{});
         Tensor sQ64 = make_tensor(make_smem_ptr(smem_q_ptr + Q64SmemOffset), SmemLayoutQ64{});
         Tensor sQ32 = make_tensor(make_smem_ptr(smem_q_ptr + Q32SmemOffset), SmemLayoutQ32{});
+        Tensor sQPrefix = make_tensor(make_smem_ptr(smem_q_ptr), SmemLayoutQPrefix{});
+        Tensor sQTail = make_tensor(make_smem_ptr(smem_q_ptr + cute::cosize_v<SmemLayoutQPrefix>), SmemLayoutQTail{});
+        Tensor sQ128Prefix = make_tensor(make_smem_ptr(smem_q_ptr + Q128SmemOffset), SmemLayoutQ128Prefix{});
+        Tensor sQ128Tail = make_tensor(make_smem_ptr(smem_q_ptr + Q128SmemOffset + cute::cosize_v<SmemLayoutQ128Prefix>), SmemLayoutQ128Tail{});
+        Tensor sQ64Prefix = make_tensor(make_smem_ptr(smem_q_ptr + Q64SmemOffset), SmemLayoutQ64Prefix{});
+        Tensor sQ64Tail = make_tensor(make_smem_ptr(smem_q_ptr + Q64SmemOffset + cute::cosize_v<SmemLayoutQ64Prefix>), SmemLayoutQ64Tail{});
+        Tensor sQ32Prefix = make_tensor(make_smem_ptr(smem_q_ptr + Q32SmemOffset), SmemLayoutQ32Prefix{});
+        Tensor sQ32Tail = make_tensor(make_smem_ptr(smem_q_ptr + Q32SmemOffset + cute::cosize_v<SmemLayoutQ32Prefix>), SmemLayoutQ32Tail{});
 #else
         Tensor sQ = make_tensor(make_smem_ptr(shared_storage.tensors.mainloop.smem_q.data()), SmemLayoutQ{});
 #endif
@@ -1039,7 +1157,7 @@ struct CollectiveMainloopFwdSm90 {
         bool const is_varlen_k = Varlen && params.cu_seqlens_k;
 #if USE_MIX_WGMMA
         auto mQ = [&] {
-            if constexpr (!HasQReg) {
+            if constexpr (!HasQReg && !SplitTmaM) {
                 return params.tma_load_Q.get_tma_tensor(params.shape_Q)(_, _, bidh, !is_varlen_q ? bidb : 0);
             } else { return nullptr; }
         }();
@@ -1052,32 +1170,68 @@ struct CollectiveMainloopFwdSm90 {
         // 定位 global-memory tile
 #if USE_MIX_WGMMA
         auto gQ = [&] {
-            if constexpr (!HasQReg) {
+            if constexpr (!HasQReg && !SplitTmaM) {
                 return local_tile(domain_offset(make_coord(seqlen_info.offset_q, _0{}), mQ),
                                   select<0, 2>(TileShape_MNK{}), make_coord(m_block, _0{}));
             } else { return nullptr; }
         }();
         auto gQ128 = [&] {
-            if constexpr (HasQ128) {
+            if constexpr (HasQ128 && !SplitTmaM) {
                 auto tensor = params.tma_load_Q128.get_tma_tensor(params.shape_Q)(_, _, bidh, !is_varlen_q ? bidb : 0);
                 return local_tile(domain_offset(make_coord(seqlen_info.offset_q, _0{}), tensor),
                                   Shape<Int<kBlockM>, Int<Q128ColsSafe>>{}, make_coord(m_block, _0{}));
             } else { return nullptr; }
         }();
         auto gQ64 = [&] {
-            if constexpr (HasQ64) {
+            if constexpr (HasQ64 && !SplitTmaM) {
                 auto tensor = params.tma_load_Q64.get_tma_tensor(params.shape_Q)(_, _, bidh, !is_varlen_q ? bidb : 0);
                 return local_tile(domain_offset(make_coord(seqlen_info.offset_q, Int<Q128Cols>{}), tensor),
                                   Shape<Int<kBlockM>, Int<Q64ColsSafe>>{}, make_coord(m_block, _0{}));
             } else { return nullptr; }
         }();
         auto gQ32 = [&] {
-            if constexpr (HasQ32) {
+            if constexpr (HasQ32 && !SplitTmaM) {
                 auto tensor = params.tma_load_Q32.get_tma_tensor(params.shape_Q)(_, _, bidh, !is_varlen_q ? bidb : 0);
                 return local_tile(domain_offset(make_coord(seqlen_info.offset_q, Int<Q128Cols + Q64Cols>{}), tensor),
                                   Shape<Int<kBlockM>, Int<Q32ColsSafe>>{}, make_coord(m_block, _0{}));
             } else { return nullptr; }
         }();
+        int const q_tile_row = seqlen_info.offset_q + m_block * kBlockM;
+        auto gQPrefix = [&] {
+            if constexpr (!HasQReg && SplitTmaM) {
+                auto tensor = params.tma_load_Q_prefix.get_tma_tensor(params.shape_Q)(_, _, bidh, !is_varlen_q ? bidb : 0);
+                return local_tile(domain_offset(make_coord(q_tile_row, _0{}), tensor),
+                                  Shape<Int<TmaPrefixM>, Int<kHeadDim>>{}, make_coord(_0{}, _0{}));
+            } else { return nullptr; }
+        }();
+        auto gQTail = [&] {
+            if constexpr (!HasQReg && SplitTmaM) {
+                auto tensor = params.tma_load_Q_tail.get_tma_tensor(params.shape_Q)(_, _, bidh, !is_varlen_q ? bidb : 0);
+                return local_tile(domain_offset(make_coord(q_tile_row + TmaPrefixM, _0{}), tensor),
+                                  Shape<Int<TmaTailM>, Int<kHeadDim>>{}, make_coord(_0{}, _0{}));
+            } else { return nullptr; }
+        }();
+#define FLASH_MAKE_SPLIT_GQ(NAME, PARAM, ENABLED, MROWS, KCOLS, ROWOFF, COLOFF) \
+        auto NAME = [&] { \
+            if constexpr (ENABLED) { \
+                auto tensor = params.PARAM.get_tma_tensor(params.shape_Q)(_, _, bidh, !is_varlen_q ? bidb : 0); \
+                return local_tile(domain_offset(make_coord(q_tile_row + ROWOFF, Int<COLOFF>{}), tensor), \
+                                  Shape<Int<MROWS>, Int<KCOLS>>{}, make_coord(_0{}, _0{})); \
+            } else { return nullptr; } \
+        }()
+        FLASH_MAKE_SPLIT_GQ(gQ128Prefix, tma_load_Q128_prefix, HasQ128 && SplitTmaM,
+                            TmaPrefixM, Q128ColsSafe, 0, 0);
+        FLASH_MAKE_SPLIT_GQ(gQ128Tail, tma_load_Q128_tail, HasQ128 && SplitTmaM,
+                            TmaTailM, Q128ColsSafe, TmaPrefixM, 0);
+        FLASH_MAKE_SPLIT_GQ(gQ64Prefix, tma_load_Q64_prefix, HasQ64 && SplitTmaM,
+                            TmaPrefixM, Q64ColsSafe, 0, Q128Cols);
+        FLASH_MAKE_SPLIT_GQ(gQ64Tail, tma_load_Q64_tail, HasQ64 && SplitTmaM,
+                            TmaTailM, Q64ColsSafe, TmaPrefixM, Q128Cols);
+        FLASH_MAKE_SPLIT_GQ(gQ32Prefix, tma_load_Q32_prefix, HasQ32 && SplitTmaM,
+                            TmaPrefixM, Q32ColsSafe, 0, Q128Cols + Q64Cols);
+        FLASH_MAKE_SPLIT_GQ(gQ32Tail, tma_load_Q32_tail, HasQ32 && SplitTmaM,
+                            TmaTailM, Q32ColsSafe, TmaPrefixM, Q128Cols + Q64Cols);
+#undef FLASH_MAKE_SPLIT_GQ
 #else
         Tensor gQ = local_tile(domain_offset(make_coord(seqlen_info.offset_q, _0{}), mQ), select<0, 2>(TileShape_MNK{}), make_coord(m_block, _0{}));  // (M, K)
 #endif
@@ -1089,33 +1243,58 @@ struct CollectiveMainloopFwdSm90 {
         // 分成适合 TMA 发起的分片
 #if USE_MIX_WGMMA
         auto [tQgQ, tQsQ] = [&] {
-            if constexpr (!HasQReg) {
+            if constexpr (!HasQReg && !SplitTmaM) {
                 auto block = params.tma_load_Q.get_slice(_0{});
                 return cute::make_tuple(group_modes<0, 3>(block.partition_S(gQ)),
                                         group_modes<0, 3>(block.partition_D(sQ)));
             } else { return cute::make_tuple(nullptr, nullptr); }
         }();
         auto [tQ128gQ, tQ128sQ] = [&] {
-            if constexpr (HasQ128) {
+            if constexpr (HasQ128 && !SplitTmaM) {
                 auto block = params.tma_load_Q128.get_slice(_0{});
                 return cute::make_tuple(group_modes<0, 3>(block.partition_S(gQ128)),
                                         group_modes<0, 3>(block.partition_D(sQ128)));
             } else { return cute::make_tuple(nullptr, nullptr); }
         }();
         auto [tQ64gQ, tQ64sQ] = [&] {
-            if constexpr (HasQ64) {
+            if constexpr (HasQ64 && !SplitTmaM) {
                 auto block = params.tma_load_Q64.get_slice(_0{});
                 return cute::make_tuple(group_modes<0, 3>(block.partition_S(gQ64)),
                                         group_modes<0, 3>(block.partition_D(sQ64)));
             } else { return cute::make_tuple(nullptr, nullptr); }
         }();
         auto [tQ32gQ, tQ32sQ] = [&] {
-            if constexpr (HasQ32) {
+            if constexpr (HasQ32 && !SplitTmaM) {
                 auto block = params.tma_load_Q32.get_slice(_0{});
                 return cute::make_tuple(group_modes<0, 3>(block.partition_S(gQ32)),
                                         group_modes<0, 3>(block.partition_D(sQ32)));
             } else { return cute::make_tuple(nullptr, nullptr); }
         }();
+#define FLASH_PARTITION_SPLIT_Q(GNAME, SNAME, PARAM, ENABLED, GQ, SQ) \
+        auto [GNAME, SNAME] = [&] { \
+            if constexpr (ENABLED) { \
+                auto block = params.PARAM.get_slice(_0{}); \
+                return cute::make_tuple(group_modes<0, 3>(block.partition_S(GQ)), \
+                                        group_modes<0, 3>(block.partition_D(SQ))); \
+            } else { return cute::make_tuple(nullptr, nullptr); } \
+        }()
+        FLASH_PARTITION_SPLIT_Q(tQPrefixgQ, tQPrefixsQ, tma_load_Q_prefix,
+                                !HasQReg && SplitTmaM, gQPrefix, sQPrefix);
+        FLASH_PARTITION_SPLIT_Q(tQTailgQ, tQTailsQ, tma_load_Q_tail,
+                                !HasQReg && SplitTmaM, gQTail, sQTail);
+        FLASH_PARTITION_SPLIT_Q(tQ128PrefixgQ, tQ128PrefixsQ, tma_load_Q128_prefix,
+                                HasQ128 && SplitTmaM, gQ128Prefix, sQ128Prefix);
+        FLASH_PARTITION_SPLIT_Q(tQ128TailgQ, tQ128TailsQ, tma_load_Q128_tail,
+                                HasQ128 && SplitTmaM, gQ128Tail, sQ128Tail);
+        FLASH_PARTITION_SPLIT_Q(tQ64PrefixgQ, tQ64PrefixsQ, tma_load_Q64_prefix,
+                                HasQ64 && SplitTmaM, gQ64Prefix, sQ64Prefix);
+        FLASH_PARTITION_SPLIT_Q(tQ64TailgQ, tQ64TailsQ, tma_load_Q64_tail,
+                                HasQ64 && SplitTmaM, gQ64Tail, sQ64Tail);
+        FLASH_PARTITION_SPLIT_Q(tQ32PrefixgQ, tQ32PrefixsQ, tma_load_Q32_prefix,
+                                HasQ32 && SplitTmaM, gQ32Prefix, sQ32Prefix);
+        FLASH_PARTITION_SPLIT_Q(tQ32TailgQ, tQ32TailsQ, tma_load_Q32_tail,
+                                HasQ32 && SplitTmaM, gQ32Tail, sQ32Tail);
+#undef FLASH_PARTITION_SPLIT_Q
 #else
         auto block_tma_Q = params.tma_load_Q.get_slice(_0{});
         Tensor tQgQ = group_modes<0, 3>(block_tma_Q.partition_S(gQ));  // (TMA)
@@ -1284,7 +1463,23 @@ struct CollectiveMainloopFwdSm90 {
                 auto &barrier_Q_value = reinterpret_cast<typename cutlass::arch::ClusterTransactionBarrier::ValueType&>(barrier_Q);
                 auto const q_cache_hint = !Split ? TMA::CacheHintSm90::EVICT_FIRST : TMA::CacheHintSm90::EVICT_LAST;
 #if USE_MIX_WGMMA
-                if constexpr (!HasQReg) {
+                if constexpr (SplitTmaM && !HasQReg) {
+                    copy(params.tma_load_Q_prefix.with(barrier_Q_value, 0 /*mcast_mask*/, q_cache_hint), tQPrefixgQ, tQPrefixsQ);
+                    copy(params.tma_load_Q_tail.with(barrier_Q_value, 0 /*mcast_mask*/, q_cache_hint), tQTailgQ, tQTailsQ);
+                } else if constexpr (SplitTmaM) {
+                    if constexpr (HasQ128) {
+                        copy(params.tma_load_Q128_prefix.with(barrier_Q_value, 0 /*mcast_mask*/, q_cache_hint), tQ128PrefixgQ, tQ128PrefixsQ);
+                        copy(params.tma_load_Q128_tail.with(barrier_Q_value, 0 /*mcast_mask*/, q_cache_hint), tQ128TailgQ, tQ128TailsQ);
+                    }
+                    if constexpr (HasQ64) {
+                        copy(params.tma_load_Q64_prefix.with(barrier_Q_value, 0 /*mcast_mask*/, q_cache_hint), tQ64PrefixgQ, tQ64PrefixsQ);
+                        copy(params.tma_load_Q64_tail.with(barrier_Q_value, 0 /*mcast_mask*/, q_cache_hint), tQ64TailgQ, tQ64TailsQ);
+                    }
+                    if constexpr (HasQ32) {
+                        copy(params.tma_load_Q32_prefix.with(barrier_Q_value, 0 /*mcast_mask*/, q_cache_hint), tQ32PrefixgQ, tQ32PrefixsQ);
+                        copy(params.tma_load_Q32_tail.with(barrier_Q_value, 0 /*mcast_mask*/, q_cache_hint), tQ32TailgQ, tQ32TailsQ);
+                    }
+                } else if constexpr (!HasQReg) {
                     copy(params.tma_load_Q.with(barrier_Q_value, 0 /*mcast_mask*/, q_cache_hint), tQgQ, tQsQ);
                 } else {
                     if constexpr (HasQ128) {
@@ -1344,6 +1539,13 @@ struct CollectiveMainloopFwdSm90 {
         for (; n_block >= n_block_min; --n_block) {
             PipelineState smem_pipe_write_v = smem_pipe_write; // copy the state, write_v is always 1 step behind
             ++smem_pipe_write;
+            // With one physical stage, the next Vt load cannot acquire its
+            // slot until the previous Vt has been transposed and released.
+            // Producing V first also unblocks the consumer's previous PV, so
+            // it can release the K slot before the producer acquires K(next).
+            if constexpr (Transpose_V && kStages == 1) {
+                copy_Vt_to_V(smem_pipe_write_v);
+            }
             if (should_load_KV) {
                 if constexpr (PagedKVNonTMA) {
                     paged_kv_manager.template load_page_table<false /*Seqlenk_mask*/>(n_block);
@@ -1351,17 +1553,42 @@ struct CollectiveMainloopFwdSm90 {
                     paged_kv_manager.load_page_table_TMA(n_block);
                 }
                 if constexpr (Transpose_V) { load_V(n_block, smem_pipe_write, cute::false_type{} /*Seqlenk_mask*/); }
+                // With a single pipeline stage, acquiring the next K stage
+                // waits for the consumer to release the current K.  The
+                // repeated-M consumer cannot perform that release until the
+                // previous V is available for PV, so issuing K before V forms
+                // a cycle: producer waits for K release while consumer waits
+                // for V.  Make V available first for this one-stage overlap
+                // path.  Multi-stage pipelines retain the original K-first
+                // order so the next K can be prefetched into a free stage.
+#if USE_MIX_WGMMA
+                if constexpr (!Transpose_V && IntraWGOverlap &&
+                              kStages == 1 && RepeatM > 1) {
+                    load_V(n_block_prev, smem_pipe_write_v,
+                           cute::true_type{} /*Seqlenk_mask*/);
+                }
+#endif
                 load_K(n_block, smem_pipe_write, cute::false_type{} /*Seqlenk_mask*/);
                 if constexpr (!Transpose_V) {
                     if constexpr (IntraWGOverlap) {
-                        load_V(n_block_prev, smem_pipe_write_v, cute::true_type{} /*Seqlenk_mask*/);
+#if USE_MIX_WGMMA
+                        if constexpr (kStages > 1 || RepeatM == 1) {
+                            load_V(n_block_prev, smem_pipe_write_v,
+                                   cute::true_type{} /*Seqlenk_mask*/);
+                        }
+#else
+                        load_V(n_block_prev, smem_pipe_write_v,
+                               cute::true_type{} /*Seqlenk_mask*/);
+#endif
                     } else {
                         load_V(n_block, smem_pipe_write, cute::false_type{} /*Seqlenk_mask*/);
                     }
                 }
             }
             n_block_prev = n_block;
-            if constexpr (Transpose_V) { copy_Vt_to_V(smem_pipe_write_v); }
+            if constexpr (Transpose_V && kStages > 1) {
+                copy_Vt_to_V(smem_pipe_write_v);
+            }
         }
         scheduler_prefetch();
         if constexpr (!Transpose_V && IntraWGOverlap) {
@@ -2282,66 +2509,74 @@ struct CollectiveMainloopFwdSm90 {
         };
 
 #if USE_MIX_WGMMA
-        // Avoid materializing a full low-precision P fragment. Convert each
-        // SW32/SW64/SW128 prefix region into a matching short-lived fragment
-        // and immediately store it. Convert the compact register suffix
-        // separately so its lifetime does not overlap the FP32 row-sum
-        // reduction.
-        // For FP8 non-V-colmajor, tSrS has already received the C-register
-        // permutation. For FP8 V-colmajor, each converted A tile is permuted
-        // independently before it is stored or retained.
+        // Avoid materializing a full low-precision P fragment. FP16/BF16 keep
+        // the STSM path. Hopper has no FP8 STSM, so FP8 uses the logical QK
+        // accumulator coordinates and ordinary shared stores instead of an
+        // invalid uint16_t recast of a b8 swizzled tensor.
         auto convert_store_P_smem_prefix = [&](auto& tSrS) {
-            Tensor tOrPAcc = make_tensor(
-                tSrS.data(), flash::convert_layout_acc_Aregs<TiledMmaPV>(tSrS.layout()));
-            auto convert_store_region = [&](auto const& smem_tiled_copy,
-                                            auto const& smem_thr_copy,
-                                            auto& tPsPRegion,
-                                            auto const& tOrPRegionPlaceholder,
-                                            auto start_tile) {
-                constexpr int StartTile = decltype(start_tile)::value;
-                // A vectorized STSM copy tile may contain multiple MMA-K
-                // tiles.  Build the complete register fragment matching the
-                // SW32/SW64/SW128 descriptor before retile_S; otherwise p>1
-                // converts only the first MMA-K tile and aliases the rest.
-                Tensor tOrPStoreRegion =
-                    make_tensor_like<Element>(tOrPRegionPlaceholder);
-                constexpr int MmaTileCount =
-                    CUTE_STATIC_V(size<2>(tOrPStoreRegion));
-                cute::for_each(cute::make_int_sequence<MmaTileCount>{}, [&](auto tile_idx) {
-                    constexpr int SrcTile = StartTile + decltype(tile_idx)::value;
-                    Tensor tOrPAccSlice = tOrPAcc(_, _, Int<SrcTile>{});
-                    Tensor tOrPStoreTile = tOrPStoreRegion(_, _, tile_idx);
-                    Tensor tOrPAccTile = make_tensor(
-                        tOrPAccSlice.data(), tOrPStoreTile.layout());
-                    convert_type_out(tOrPAccTile, tOrPStoreTile);
-                    if constexpr (Is_FP8 && V_colmajor) {
-                        flash::permute_Aregs_fp8(tOrPStoreTile);
+            if constexpr (Is_FP8) {
+                auto thread_mma_qk = tiled_mma_qk.get_thread_slice(thread_idx);
+                Tensor cS = cute::make_identity_tensor(
+                    Shape<Int<PBlockM>, Int<kBlockN>>{});
+                Tensor tScS = thread_mma_qk.partition_C(cS);
+                Tensor tScS_rowcol = make_tensor(
+                    tScS.data(), flash::convert_layout_acc_rowcol(tScS.layout()));
+                Tensor tSrS_rowcol = make_tensor(
+                    tSrS.data(), flash::convert_layout_acc_rowcol(tSrS.layout()));
+                static_assert(CUTE_STATIC_V(size(tScS_rowcol)) ==
+                              CUTE_STATIC_V(size(tSrS_rowcol)));
+                cutlass::NumericConverter<Element, ElementAccum> convert;
+                CUTLASS_PRAGMA_UNROLL
+                for (int m = 0; m < size<0>(tSrS_rowcol); ++m) {
+                    CUTLASS_PRAGMA_UNROLL
+                    for (int n = 0; n < size<1>(tSrS_rowcol); ++n) {
+                        int const row = int(get<0>(tScS_rowcol(m, n)));
+                        int const col = int(get<1>(tScS_rowcol(m, n)));
+                        if (col < PSmemCols) {
+                            // The one-tile FP8 prefix is always an SW32 region.
+                            static_assert(!HasPSmem ||
+                                          (HasP32 && !HasP64 && !HasP128));
+                            sP32(row, col) = convert(tSrS_rowcol(m, n));
+                        }
                     }
-                });
-                if constexpr (Is_FP8) {
-                    Tensor tPrPRegion = smem_thr_copy.retile_S(
-                        recast<uint16_t>(tOrPStoreRegion));
-                    cute::copy(smem_tiled_copy, tPrPRegion, tPsPRegion);
-                } else {
-                    Tensor tPrPRegion =
-                        smem_thr_copy.retile_S(tOrPStoreRegion);
-                    cute::copy(smem_tiled_copy, tPrPRegion, tPsPRegion);
                 }
-            };
+            } else {
+                Tensor tOrPAcc = make_tensor(
+                    tSrS.data(), flash::convert_layout_acc_Aregs<TiledMmaPV>(tSrS.layout()));
+                auto convert_store_region = [&](auto const& smem_tiled_copy,
+                                                auto const& smem_thr_copy,
+                                                auto& tPsPRegion,
+                                                auto const& tOrPRegionPlaceholder,
+                                                auto start_tile) {
+                    constexpr int StartTile = decltype(start_tile)::value;
+                    Tensor tOrPStoreRegion = make_tensor_like<Element>(tOrPRegionPlaceholder);
+                    constexpr int MmaTileCount = CUTE_STATIC_V(size<2>(tOrPStoreRegion));
+                    cute::for_each(cute::make_int_sequence<MmaTileCount>{}, [&](auto tile_idx) {
+                        constexpr int SrcTile = StartTile + decltype(tile_idx)::value;
+                        Tensor tOrPAccSlice = tOrPAcc(_, _, Int<SrcTile>{});
+                        Tensor tOrPStoreTile = tOrPStoreRegion(_, _, tile_idx);
+                        Tensor tOrPAccTile = make_tensor(
+                            tOrPAccSlice.data(), tOrPStoreTile.layout());
+                        convert_type_out(tOrPAccTile, tOrPStoreTile);
+                    });
+                    Tensor tPrPRegion = smem_thr_copy.retile_S(tOrPStoreRegion);
+                    cute::copy(smem_tiled_copy, tPrPRegion, tPsPRegion);
+                };
 
-            if constexpr (HasP128) {
-                convert_store_region(smem_tiled_copy_P128, smem_thr_copy_P128, tPsP128,
-                                     tOrP128Placeholder, Int<0>{});
-            }
-            if constexpr (HasP64) {
-                constexpr int StartTile = P128KTiles;
-                convert_store_region(smem_tiled_copy_P64, smem_thr_copy_P64, tPsP64,
-                                     tOrP64Placeholder, Int<StartTile>{});
-            }
-            if constexpr (HasP32) {
-                constexpr int StartTile = P128KTiles + P64KTiles;
-                convert_store_region(smem_tiled_copy_P32, smem_thr_copy_P32, tPsP32,
-                                     tOrP32Placeholder, Int<StartTile>{});
+                if constexpr (HasP128) {
+                    convert_store_region(smem_tiled_copy_P128, smem_thr_copy_P128, tPsP128,
+                                         tOrP128Placeholder, Int<0>{});
+                }
+                if constexpr (HasP64) {
+                    constexpr int StartTile = P128KTiles;
+                    convert_store_region(smem_tiled_copy_P64, smem_thr_copy_P64, tPsP64,
+                                         tOrP64Placeholder, Int<StartTile>{});
+                }
+                if constexpr (HasP32) {
+                    constexpr int StartTile = P128KTiles + P64KTiles;
+                    convert_store_region(smem_tiled_copy_P32, smem_thr_copy_P32, tPsP32,
+                                         tOrP32Placeholder, Int<StartTile>{});
+                }
             }
         };
 
@@ -2387,8 +2622,8 @@ struct CollectiveMainloopFwdSm90 {
             constexpr bool Is_first = decltype(is_first_type)::value;
             if constexpr (Is_FP8 && !V_colmajor) {
                 softmax.template online_softmax_reduce<Is_first>(tSrS);
-                flash::permute_Cregs_fp8(tSrS);
                 convert_store_P_smem_prefix(tSrS);
+                flash::permute_Cregs_fp8(tSrS);
                 convert_P_reg_suffix(tSrS, tOrP);
             } else {
                 convert_store_P_smem_prefix(tSrS);
@@ -2399,8 +2634,9 @@ struct CollectiveMainloopFwdSm90 {
 #endif
 
         auto arrive_on_P_write_barrier = [&] {
-            cutlass::arch::fence_view_async_shared();
 #if !USE_MIX_WGMMA
+            // MIX-WGMMA fences immediately before gemmPV consumes the SMEM prefix.
+            cutlass::arch::fence_view_async_shared();
             __syncwarp();  // Only need syncwarp since each warp is using its own P values for MmaPV
 #endif
             if constexpr (LargeHeadDimV) {
@@ -2590,9 +2826,6 @@ struct CollectiveMainloopFwdSm90 {
                 if constexpr (HasPSmem) {
                     softmax_slice.template online_softmax_exp<true>(tSrS);
                     softmax_slice.template online_softmax_reduce<IsFirst>(tSrS);
-                    if constexpr (Is_FP8 && !V_colmajor) {
-                        flash::permute_Cregs_fp8(tSrS);
-                    }
                 } else {
                     softmax_slice.template online_softmax<IsFirst, true>(tSrS);
                     if constexpr (Is_FP8 && !V_colmajor) {
@@ -2605,6 +2838,9 @@ struct CollectiveMainloopFwdSm90 {
             auto materialize_p = [&] {
                 if constexpr (HasPSmem) {
                     convert_store_P_smem_prefix(tSrS);
+                    if constexpr (Is_FP8 && !V_colmajor) {
+                        flash::permute_Cregs_fp8(tSrS);
+                    }
                     convert_P_reg_suffix(tSrS, tOrP);
                 } else {
                     convert_type_out(tOrPAcc, tOrP);

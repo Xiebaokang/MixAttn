@@ -185,7 +185,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "{runtime_dir.resolve()}")
     if not cmake_path.exists() or cmake_path.read_text() != content:
         cmake_path.write_text(content)
 
-
+'''
 def build_source(
     register_usage_level: int = 10,
     cu_build_dir: str | Path | None = None,
@@ -344,6 +344,195 @@ def build_source(
         }
     report = [report_by_target[target] for target in sorted(report_by_target)]
     report_path.write_text(json.dumps(report, indent=2) + "\n")
+    return successful
+'''
+
+def build_source(
+    register_usage_level: int = 10,
+    cu_build_dir: str | Path | None = None,
+    *,
+    cu_files: Iterable[str | Path],
+    arch: str = "90a",
+    jobs: int = 16,
+) -> dict[str, Path]:
+    """Compile CUDA sources and reuse existing binaries in bin directory."""
+    if not 0 <= register_usage_level <= 10:
+        raise ValueError("register_usage_level must be in [0, 10]")
+    if jobs <= 0:
+        raise ValueError("jobs must be positive")
+    
+    cu_files = [Path(path).resolve() for path in cu_files]
+    if not cu_files:
+        return {}
+    if any(not path.is_file() for path in cu_files):
+        missing = [str(path) for path in cu_files if not path.is_file()]
+        raise FileNotFoundError(f"CUDA source does not exist: {missing}")
+    targets = [path.stem for path in cu_files]
+    if len(set(targets)) != len(targets):
+        raise ValueError("CUDA source stems must be unique")
+    
+    cu_build_dir = (HERE / "build" if cu_build_dir is None else Path(cu_build_dir))
+    level_dir = cu_build_dir / f"rl{register_usage_level}"
+    project_dir = cu_build_dir / f"project_rl{register_usage_level}"
+    runtime_dir = level_dir / "bin"
+    runtime_dir.mkdir(parents=True, exist_ok=True)
+    _write_cmake_project(project_dir, cu_files, register_usage_level, runtime_dir,)
+    # Configure CMake
+    configure = [
+        "cmake",
+        "-Wno-dev",
+        "-S",
+        str(project_dir),
+        "-B",
+        str(level_dir),
+        "-DCMAKE_BUILD_TYPE=Release",
+        f"-DCMAKE_CUDA_ARCHITECTURES={arch}",
+    ]
+    print("+", " ".join(configure), flush=True)
+    subprocess.run(configure, check=True)
+    # Make sure common target exists
+    common_build = [
+        "cmake",
+        "--build",
+        str(level_dir),
+        "--target",
+        "fa3_prepare_scheduler",
+        "--parallel",
+        "1",
+    ]
+    print("+", " ".join(common_build), flush=True)
+    subprocess.run(common_build, check=True)
+    # Detect cached binaries
+    cached_targets = {target for target in targets if (runtime_dir / target).is_file()}
+    build_targets = [target for target in targets if target not in cached_targets]
+
+    build_results: dict[str, tuple[int, list[str], str, bool, float]] = {}
+    # Cached binaries
+    for target in cached_targets:
+        build_results[target] = (
+            0,      # return code
+            [],     # warnings
+            "",
+            False,  # rebuilt
+            0.0,
+        )
+    print(
+        f"{len(cached_targets)} cached binary(s), "
+        f"{len(build_targets)} target(s) need compilation",
+        flush=True,
+    )
+
+    def build_one(target: str) -> tuple[str, int, list[str], str, bool, float]:
+        executable = runtime_dir / target
+        old_mtime = (executable.stat().st_mtime_ns if executable.is_file() else None)
+
+        command = [
+            "cmake",
+            "--build",
+            str(level_dir),
+            "--target",
+            target,
+            "--parallel",
+            "1",
+        ]
+        start = perf_counter()
+        process = subprocess.run(command, text=True, capture_output=True, check=False)
+        elapsed = perf_counter() - start
+        output = "\n".join(
+            part
+            for part in (
+                process.stdout.strip(),
+                process.stderr.strip(),
+            )
+            if part
+        )
+        warnings = [match.group(0) for match in PTXAS_PERF_LOSS_RE.finditer(output)]
+        new_mtime = (executable.stat().st_mtime_ns if executable.is_file() else None)
+        rebuilt = old_mtime != new_mtime
+        return (target, process.returncode, warnings, output, rebuilt, elapsed)
+
+    # Compile missing binaries only
+    if build_targets:
+        worker_count = min(jobs, len(build_targets),)
+        with ThreadPoolExecutor(max_workers=worker_count) as executor:
+            futures = {
+                executor.submit(build_one, target): target for target in build_targets
+            }
+            for completed, future in enumerate(as_completed(futures), 1):
+                (target, returncode, warnings, output, rebuilt, elapsed) = future.result()
+                build_results[target] = (returncode, warnings, output, rebuilt, elapsed)
+                if returncode != 0:
+                    state = "compile failed"
+                elif warnings:
+                    state = "performance warning"
+                elif rebuilt:
+                    state = "compiled"
+                else:
+                    state = "cached binary"
+                print(
+                    f"[{completed}/{len(build_targets)}] "
+                    f"{target}: {state} ({elapsed:.1f}s)",
+                    flush=True,
+                )
+
+                if returncode != 0:
+                    print(output or "compiler produced no output", flush=True)
+                elif warnings:
+                    for warning in warnings:
+                        print(f"  {warning}", flush=True)
+
+    # Generate compile report
+    report_path = level_dir / "compile_index.json"
+    previous: dict[str, dict] = {}
+    if report_path.exists():
+        try:
+            previous = {
+                item["target"]: item for item in json.loads(report_path.read_text())
+            }
+        except (json.JSONDecodeError, KeyError, TypeError):
+            previous = {}
+    source_by_target = dict(zip(targets, cu_files))
+    fingerprints = {
+        target:
+        sha256(source_by_target[target].read_bytes()).hexdigest()
+        for target in targets
+    }
+
+    successful: dict[str, Path] = {}
+    report_by_target = dict(previous)
+    for target in targets:
+        source = source_by_target[target]
+        executable = runtime_dir / target
+        fingerprint = fingerprints[target]
+        (returncode, warnings, output, rebuilt, elapsed) = build_results[target]
+        if (not warnings and not rebuilt and target in cached_targets):
+            old = previous.get(target)
+            if (
+                old 
+                and old.get("source_sha256") == fingerprint
+                and old.get("status") == "performance_warning"
+            ):
+                warnings = list(old.get("warnings", []))
+
+        if (returncode != 0 or not executable.is_file()):
+            status = "compile_failed"
+        elif warnings:
+            status = "performance_warning"
+        else:
+            status = "success"
+            successful[target] = executable.resolve()
+
+        report_by_target[target] = {
+            "target": target,
+            "source": str(source),
+            "source_sha256": fingerprint,
+            "register_usage_level": register_usage_level,
+            "status": status,
+            "warnings": warnings,
+            "elapsed_seconds": elapsed,
+        }
+    report = [report_by_target[target] for target in sorted(report_by_target)]
+    report_path.write_text(json.dumps(report, indent=2,) + "\n")
     return successful
 
 
@@ -636,13 +825,14 @@ def run_interface(
         mode=mode,
     )
 
-# if __name__ == "__main__":
-#     shape = (1, 16, 32768, 64)
-#     dtype = DType.FP16
-#     causal = False
-    # cfg1 = TConfig(256, 96, 2, 24, 240, 1, 1, 2, 1, 1)
-    # cfg2 = TConfig(256, 96, 2, 24, 240, 0, 1, 2, 1, 1)
-    # cfg3 = TConfig(256, 96, 2, 24, 240, 1, 0, 2, 1, 1)
+if __name__ == "__main__":
+    shape = (1, 16, 32768, 64)
+    dtype = DType.FP8
+    causal = False
+    cfg1 = TConfig(384, 128, 1, 24, 240, 0, 1, 2, 0, 0)
+    # cfg2 = TConfig(128, 64, 2, 24, 240, 4, 0, 2, 0, 0)
+    # cfg3 = TConfig(256, 64, 2, 24, 240, 4, 0, 2, 0, 0)
+    # cfg4 = TConfig(256, 64, 2, 24, 112, 4, 0, 4, 0, 0)
     # cfg4 = TConfig(256, 96, 2, 24, 240, 0, 0, 2, 1, 1)
-    # result_dir = HERE / "results"
-    # run_interface(shape=shape, dtype=dtype, causal=causal, configs=[cfg1], result_dir=result_dir)
+    result_dir = HERE / "results"
+    run_interface(shape=shape, dtype=dtype, causal=causal, configs=[cfg1], result_dir=result_dir)

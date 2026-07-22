@@ -4,7 +4,7 @@ import torch
 import flash_attn_interface
 
 
-SHAPES = [(1, 16, 32768, 256, 0)]
+SHAPES = [(1, 16, 30720, 256, 0)]
 
 
 def parse_args():

@@ -4,7 +4,7 @@ import torch
 import flash_attn_interface
 
 
-DEFAULT_SHAPES = [(1, 16, 30720, 256, 1)]
+DEFAULT_SHAPES = [(1, 16, 30720, 64, 0)]
 
 
 def parse_shape(value):

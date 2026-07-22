@@ -1,0 +1,37 @@
+{
+  "shape": {
+    "B": 1,
+    "H": 16,
+    "S": 32768,
+    "D": 64
+  },
+  "dtype": "fp8",
+  "causal": false,
+  "total_configs": 1,
+  "successful": 1,
+  "failed": 0,
+  "ranked": 1,
+  "top_results": [
+    {
+      "rank": 1,
+      "config": {
+        "kBlockM": 384,
+        "kBlockN": 128,
+        "kStage": 1,
+        "producer_reg_dealloc": 24,
+        "consumer_reg_alloc": 240,
+        "p_smem_k_tiles": 0,
+        "q_reg_k_tiles": 1,
+        "num_consumer": 2,
+        "use_scheduler_barrier": 0,
+        "rescale_o_before_gemm": 0
+      },
+      "executable": "/home/xiebaokang/projects/cuda/test/microbenchmarks/MixAttn/hopper/cxx-tests/tune/src/test_b1_h16_s32768_d64_fp8_noncausal/build/rl5/bin/bm384_bn128_st1_prd24_cra240_p0_q1_nc2_sb0_rb0",
+      "time_ms": 16.637,
+      "tflops": 264.36,
+      "smem_size": 79872,
+      "reg_size": 221184
+    }
+  ],
+  "failed_results": []
+}

@@ -78,12 +78,12 @@ def tune(
     stage_limit: tuple[int, int] = (1, 3),
     bn_rate: float = 0.5,
     arch: str = "90a",
-    jobs: int = 20,
+    jobs: int = 16,
     rank: int = 15,
     coarse_register_usage_level: int = 5,
     final_register_usage_level: int = 10,
-    mode: Mode = Mode.KEEP,
-    benchmark_timeout_seconds: float = 120.0,
+    mode: Mode = Mode.RADICAL,
+    benchmark_timeout_seconds: float = 60.0,
     src_dir: str | Path | None = None,
     result_dir: str | Path | None = None,
 ) -> list[BenchResult]:
@@ -152,15 +152,15 @@ def tune(
         arch=arch,
         jobs=jobs,
         register_usage_level=coarse_register_usage_level,
-        rank=len(schedule_configs),
+        rank=rank,
         timeout_seconds=benchmark_timeout_seconds,
         mode=mode,
         src_dir=src_dir,
     )
-    ret2 = get_best_result(ret1, schedule_results)
+    # ret2 = get_best_result(ret1, schedule_results)
 
     register_configs = mix_wgmma_third_configs(
-        configs=[item.config for item in ret2],
+        configs=[item.config for item in schedule_results],
         HD=shape[-1],
         elem_width=elem_width,
         reg_limit=reg_limit,
@@ -175,13 +175,13 @@ def tune(
         arch=arch,
         jobs=jobs,
         register_usage_level=coarse_register_usage_level,
-        rank=len(register_configs),
+        rank=rank,
         timeout_seconds=benchmark_timeout_seconds,
         mode=mode,
         src_dir=src_dir,
     )
-    ret3 = get_best_result(ret2, register_results)
-    if not ret3:
+    # ret3 = get_best_result(ret2, register_results)
+    if not register_results:
         return []
 
     return _run_stage(
@@ -189,7 +189,7 @@ def tune(
         shape=shape,
         dtype=dtype,
         causal=causal,
-        configs=[item.config for item in ret3],
+        configs=[item.config for item in register_results],
         arch=arch,
         jobs=jobs,
         register_usage_level=final_register_usage_level,
@@ -202,14 +202,18 @@ def tune(
 
 
 if __name__ == "__main__":
-    # fp16
-    tune(shape=(1, 16, 30720, 64), dtype=DType.FP16, causal=False)
-    tune(shape=(1, 16, 30720, 128), dtype=DType.FP16, causal=False)
-    tune(shape=(1, 16, 30720, 64), dtype=DType.FP16, causal=True)
-    tune(shape=(1, 16, 30720, 128), dtype=DType.FP16, causal=True)
-    # fp8
-    tune(shape=(1, 16, 30720, 64), dtype=DType.FP8, causal=False)
-    tune(shape=(1, 16, 30720, 128), dtype=DType.FP8, causal=False)
+    # tune(shape=(1, 16, 30720, 64), dtype=DType.FP16, causal=False)
+    # tune(shape=(1, 16, 30720, 128), dtype=DType.FP16, causal=False)
+    # tune(shape=(1, 16, 30720, 256), dtype=DType.FP16, causal=False)
+    # tune(shape=(1, 16, 30720, 64), dtype=DType.FP16, causal=True)
+    # tune(shape=(1, 16, 30720, 128), dtype=DType.FP16, causal=True)
+    # tune(shape=(1, 16, 30720, 256), dtype=DType.FP16, causal=True)
+
     tune(shape=(1, 16, 30720, 64), dtype=DType.FP8, causal=True)
+    tune(shape=(1, 16, 30720, 64), dtype=DType.FP8, causal=False)
     tune(shape=(1, 16, 30720, 128), dtype=DType.FP8, causal=True)
+    tune(shape=(1, 16, 30720, 128), dtype=DType.FP8, causal=False)
+    tune(shape=(1, 16, 30720, 256), dtype=DType.FP8, causal=True)
+    tune(shape=(1, 16, 30720, 256), dtype=DType.FP8, causal=False)
+
 

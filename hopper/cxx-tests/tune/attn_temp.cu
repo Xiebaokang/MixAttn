@@ -183,20 +183,37 @@ void benchmark(const char* dtype_name, const RunOptions& options) {
     return;
   }
 
+  auto check_cuda = [](cudaError_t status, char const* where) {
+    if (status != cudaSuccess) {
+      std::fprintf(stderr, "CUDA failure at %s: %s\n", where,
+                   cudaGetErrorString(status));
+      std::exit(EXIT_FAILURE);
+    }
+  };
+
   for (int i = 0; i < 20; ++i) run();
+  // Catch launch and asynchronous execution failures before constructing the
+  // timing interval. Without this check, failed kernels leave total_ms at
+  // zero and are misleadingly printed as infinite throughput.
+  check_cuda(cudaGetLastError(), "warmup launch");
+  check_cuda(cudaDeviceSynchronize(), "warmup execution");
 
   cudaEvent_t start, stop;
-  cudaEventCreate(&start);
-  cudaEventCreate(&stop);
-  cudaEventRecord(start, at::cuda::getCurrentCUDAStream());
+  check_cuda(cudaEventCreate(&start), "cudaEventCreate(start)");
+  check_cuda(cudaEventCreate(&stop), "cudaEventCreate(stop)");
+  check_cuda(cudaEventRecord(start, at::cuda::getCurrentCUDAStream()),
+             "cudaEventRecord(start)");
   for (int i = 0; i < 100; ++i) run();
-  cudaEventRecord(stop, at::cuda::getCurrentCUDAStream());
-  cudaEventSynchronize(stop);
+  check_cuda(cudaGetLastError(), "timed launch");
+  check_cuda(cudaEventRecord(stop, at::cuda::getCurrentCUDAStream()),
+             "cudaEventRecord(stop)");
+  check_cuda(cudaEventSynchronize(stop), "timed execution");
 
   float total_ms = 0.0f;
-  cudaEventElapsedTime(&total_ms, start, stop);
-  cudaEventDestroy(start);
-  cudaEventDestroy(stop);
+  check_cuda(cudaEventElapsedTime(&total_ms, start, stop),
+             "cudaEventElapsedTime");
+  check_cuda(cudaEventDestroy(start), "cudaEventDestroy(start)");
+  check_cuda(cudaEventDestroy(stop), "cudaEventDestroy(stop)");
 
   const double time_ms = total_ms / 100;
   // QK^T and P*V each cost 2*B*H*S*S*D FLOPs. Causal computes half.

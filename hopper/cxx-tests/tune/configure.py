@@ -7,11 +7,10 @@ from utils import TConfig, Mode
 
 MMA_M = 64
 MAX_MMA_N = 256
-# Hopper TMA tensor-map box dimensions are limited to 256 elements.  The
-# current Q-load and O-store descriptors cover the complete logical BM tile in
-# one transaction, so BM must remain within that limit until those transfers
-# are split along M.
-MAX_TMA_M = 256
+# Hopper limits one tensor-map box dimension to 256 elements.  Q load and O
+# store split a larger logical BM tile into a 256-row prefix plus one tail, so
+# the two-transaction implementation supports BM up to 512.
+MAX_TMA_M = 512
 WARP_GROUP_THREADS = 128
 MIN_PRODUCER_REGISTERS = 24
 REGISTER_BYTES = 4
@@ -24,10 +23,12 @@ CONSUMER_CONTROL_REGISTER_RESERVE = 8
 # tune.py compares these new results against the retained stage-2 winner.
 REGISTER_ALLOCATION = {
     1: (
+        (56, 256),
         (48, 256),
         (64, 256),
     ),
     2: (
+        (24, 240),
         (24, 232),
         (32, 232),
         (24, 224),
@@ -40,6 +41,7 @@ REGISTER_ALLOCATION = {
         (32, 200),
     ),
     3: (
+        (32, 160),
         (24, 160),
         (24, 152),
         (40, 152),
@@ -55,7 +57,7 @@ BASE_REGISTER_ALLOCATION = {
     1: (56, 256),
     2: (24, 240),
     3: (32, 160),
-    4: (24, 120),
+    4: (24, 112),
 }
 
 
@@ -449,7 +451,15 @@ def mix_wgmma_base_configs(
                         continue
 
                     p_total_tiles = bn // mma_k
-                    for p_smem_k_tiles in range(p_total_tiles + 1):
+                    # FP8 PV currently keeps P entirely in registers.  An FP8
+                    # shared-memory prefix needs a byte-accurate layout mapping
+                    # for the SS operand; ordinary logical-coordinate stores do
+                    # not match that descriptor.
+                    p_smem_candidates = (
+                        (0,) if elem_width == 1
+                        else range(p_total_tiles + 1)
+                    )
+                    for p_smem_k_tiles in p_smem_candidates:
                         for q_reg_k_tiles in range(q_total_tiles + 1):
                             smem_size = _smem_size_bytes(
                                 bm, bn, HD, stage, elem_width,
@@ -507,9 +517,8 @@ def mix_wgmma_second_configs(configs: list[TConfig]) -> list[TConfig]:
     for config in configs:
         if not isinstance(config, TConfig):
             raise TypeError("configs must contain only TConfig values")
-        # Old result JSON files may contain BM>256 candidates generated before
-        # the TMA box limit was enforced.  Do not derive stage-2 variants from
-        # descriptors that cannot be constructed on Hopper.
+        # Do not derive stage-2 variants beyond the two-transaction Q/O TMA
+        # implementation's logical-M limit.
         if config.kBlockM > MAX_TMA_M:
             continue
         if config.use_scheduler_barrier not in (0, 1):
@@ -526,8 +535,8 @@ def mix_wgmma_second_configs(configs: list[TConfig]) -> list[TConfig]:
                     use_scheduler_barrier=use_scheduler_barrier,
                     rescale_o_before_gemm=rescale_o_before_gemm,
                 )
-                if candidate != config:
-                    result.append(candidate)
+                # if candidate != config:
+                result.append(candidate)
     return _unique_configs(result)
 
 
@@ -575,11 +584,11 @@ def mix_wgmma_third_configs(
         for producer_reg_dealloc, consumer_reg_alloc in (
             REGISTER_ALLOCATION[config.num_consumer]
         ):
-            if (
-                producer_reg_dealloc == config.producer_reg_dealloc
-                and consumer_reg_alloc == config.consumer_reg_alloc
-            ):
-                continue
+            # if (
+            #     producer_reg_dealloc == config.producer_reg_dealloc
+            #     and consumer_reg_alloc == config.consumer_reg_alloc
+            # ):
+            #     continue
             if not _allocation_is_valid(
                 consumer_required_bytes=consumer_required_bytes,
                 producer_reg_dealloc=producer_reg_dealloc,
@@ -596,6 +605,6 @@ def mix_wgmma_third_configs(
     return _unique_configs(result)
 
 # if __name__ == "__main__":
-#     cfgs = mix_wgmma_base_configs(HD=128, mode=Mode.KEEP, num_consumer_limit=(2, 3))
+#     cfgs = mix_wgmma_base_configs(HD=128, elem_width=2, mode=Mode.RADICAL, num_consumer_limit=(2, 3))
 #     for cfg in cfgs:
 #         print(cfg)

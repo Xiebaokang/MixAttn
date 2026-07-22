@@ -117,18 +117,13 @@ RepeatM  = BM / ComputeM
 
 ### BM 上限
 
-当前 Q load 和 O store 使用覆盖完整 BM 的 Hopper TMA descriptor。单个 TMA box 的 M 方向不能超过 256，因此 config 生成器限制：
+Hopper 单个 TMA tensor-map box 的 M 方向不能超过 256。Q load 和 O store 对更大的逻辑 BM 使用两条 TMA：前缀 256 行，加上最多 256 行的尾部，因此 config 生成器限制：
 
 ```text
-BM <= 256
+BM <= 512
 ```
 
-第二、第三阶段也会过滤旧结果中的 `BM > 256` 配置。在把 Q/O TMA 搬运改为沿 M 分块之前，不应手工构造 BM384 等配置，否则会出现：
-
-```text
-boxDim (HD,384,...)
-Error: Failed to initialize the TMA descriptor 1
-```
+第二、第三阶段也会过滤旧结果中的 `BM > 512` 配置。例如 BM384 会分别使用 `256 + 128` 两条 Q-load TMA 和两条 O-store TMA；两条 Q load 共用同一个 transaction barrier，消费者仍在完整 Q tile 就绪后开始计算。超过 512 目前仍会在编译期拒绝；若要继续扩大，需要推广为三条及以上 TMA。
 
 ### 输出文件
 

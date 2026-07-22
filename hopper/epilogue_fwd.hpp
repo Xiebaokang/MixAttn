@@ -71,6 +71,18 @@ struct CollectiveEpilogueFwd {
     using SmemLayoutAtomOTMA = decltype(cutlass::gemm::collective::detail::ss_smem_selector<GMMA::Major::K, Element,
         decltype(cute::get<0>(TileShape_MNK_PV{})), decltype(cute::get<1>(TileShape_MNK_PV{}))>());
     using SmemLayoutOTMA = decltype(tile_to_shape(SmemLayoutAtomOTMA{}, select<0, 1>(TileShape_MNK_PV{})));
+    static constexpr int TmaMaxBoxM = 256;
+    static constexpr bool SplitTmaM = kBlockM > TmaMaxBoxM;
+    static constexpr int TmaPrefixM = SplitTmaM ? TmaMaxBoxM : kBlockM;
+    // Keep the inactive tail layout valid because CUTE instantiates the alias
+    // before std::conditional_t discards its descriptor type.
+    static constexpr int TmaTailM = SplitTmaM ? kBlockM - TmaMaxBoxM : kBlockM;
+    static_assert(kBlockM <= 2 * TmaMaxBoxM,
+                  "BM larger than 512 requires more than two O TMA transactions");
+    using SmemLayoutOTMAPrefix = decltype(tile_to_shape(
+        SmemLayoutAtomOTMA{}, Shape<Int<TmaPrefixM>, Int<kHeadDimV>>{}));
+    using SmemLayoutOTMATail = decltype(tile_to_shape(
+        SmemLayoutAtomOTMA{}, Shape<Int<TmaTailM>, Int<kHeadDimV>>{}));
     static constexpr int kSwizzle = kBlockKGmem == 128 ? 4 : (kBlockKGmem == 64 ? 3 : (kBlockKGmem == 32 ? 2 : 1));
     static constexpr int kSwizzleBase = sizeof(Element) == 4 ? 2 : (sizeof(Element) == 2 ? 3 : 4);
     using SmemLayoutAtomO = decltype(
@@ -107,16 +119,17 @@ struct CollectiveEpilogueFwd {
         cute::array_aligned<Element, Use_smem ? cute::cosize_v<SmemLayoutO> : 0> smem_o;
     };
 
-    using TMA_O = std::conditional_t<
-        Use_TMA_O,
-        decltype(make_tma_copy(
+    template <int MRows, class SmemLayout>
+    using TMA_O_Tile = decltype(make_tma_copy(
             GmemTiledCopyOTMA{},
             make_tensor(make_gmem_ptr(static_cast<Element*>(nullptr)), ShapeO{}, StrideO{}),
-            SmemLayoutOTMA{},
-            select<0, 1>(TileShape_MNK_PV{}),
-            _1{})),  // no mcast for O
-        std::nullptr_t
-    >;
+            SmemLayout{}, Shape<Int<MRows>, Int<kHeadDimV>>{}, _1{}));
+    using TMA_OFull = TMA_O_Tile<kBlockM, SmemLayoutOTMA>;
+    using TMA_OPrefixFull = TMA_O_Tile<TmaPrefixM, SmemLayoutOTMAPrefix>;
+    using TMA_OTailFull = TMA_O_Tile<TmaTailM, SmemLayoutOTMATail>;
+    using TMA_O = std::conditional_t<Use_TMA_O && !SplitTmaM, TMA_OFull, std::nullptr_t>;
+    using TMA_OPrefix = std::conditional_t<Use_TMA_O && SplitTmaM, TMA_OPrefixFull, std::nullptr_t>;
+    using TMA_OTail = std::conditional_t<Use_TMA_O && SplitTmaM, TMA_OTailFull, std::nullptr_t>;
 
     // Host side kernel arguments
     struct Arguments {
@@ -153,6 +166,8 @@ struct CollectiveEpilogueFwd {
         StrideLSEPacked const stride_LSE_partial_packed;
         cutlass::FastDivmod qhead_per_khead_divmod;
         TMA_O tma_store_O;
+        TMA_OPrefix tma_store_O_prefix;
+        TMA_OTail tma_store_O_tail;
         int const* cu_seqlens = nullptr;
         int const* seqused = nullptr;
     };
@@ -161,11 +176,23 @@ struct CollectiveEpilogueFwd {
     to_underlying_arguments(Arguments const& args) {
         Tensor mO = make_tensor(make_gmem_ptr(args.ptr_O), args.shape_O, args.stride_O);
         TMA_O tma_store_O = [&]{
-            if constexpr (Use_TMA_O) {
+            if constexpr (Use_TMA_O && !SplitTmaM) {
                 return make_tma_copy(GmemTiledCopyOTMA{}, mO, SmemLayoutO{}, select<0, 1>(TileShape_MNK_PV{}), _1{}); // no mcast
             } else {
                 return nullptr;
             }
+        }();
+        auto tma_store_O_prefix = [&]{
+            if constexpr (Use_TMA_O && SplitTmaM) {
+                return make_tma_copy(GmemTiledCopyOTMA{}, mO, SmemLayoutOTMAPrefix{},
+                                     Shape<Int<TmaPrefixM>, Int<kHeadDimV>>{}, _1{});
+            } else { return nullptr; }
+        }();
+        auto tma_store_O_tail = [&]{
+            if constexpr (Use_TMA_O && SplitTmaM) {
+                return make_tma_copy(GmemTiledCopyOTMA{}, mO, SmemLayoutOTMATail{},
+                                     Shape<Int<TmaTailM>, Int<kHeadDimV>>{}, _1{});
+            } else { return nullptr; }
         }();
         // If PackGQA, reshape O to be ((qhead_per_khead, seqlen_q), head_size, nhead_k, batch_size, num_splits)
         int const qhead_per_khead = !PackGQA ? 1 : cute::ceil_div(get<2>(args.shape_O), args.nheads_kv);
@@ -199,14 +226,20 @@ struct CollectiveEpilogueFwd {
                 args.ptr_LSE, args.stride_LSE, shape_LSE_packed, stride_LSE_packed,
                 args.ptr_LSE_partial, args.stride_LSE_partial, stride_LSE_partial_packed,
                 cutlass::FastDivmod(qhead_per_khead),
-                tma_store_O, args.cu_seqlens, args.seqused};
+                tma_store_O, tma_store_O_prefix, tma_store_O_tail,
+                args.cu_seqlens, args.seqused};
     }
 
     /// Issue Tma Descriptor Prefetch -- ideally from a single thread for best performance
     CUTLASS_DEVICE
     static void prefetch_tma_descriptors(Params const& params) {
         if constexpr (Use_TMA_O) {
-            cute::prefetch_tma_descriptor(params.tma_store_O.get_tma_descriptor());
+            if constexpr (SplitTmaM) {
+                cute::prefetch_tma_descriptor(params.tma_store_O_prefix.get_tma_descriptor());
+                cute::prefetch_tma_descriptor(params.tma_store_O_tail.get_tma_descriptor());
+            } else {
+                cute::prefetch_tma_descriptor(params.tma_store_O.get_tma_descriptor());
+            }
         }
     }
 
@@ -323,17 +356,44 @@ struct CollectiveEpilogueFwd {
 
         // Step 3: Write O from smem -> gmem
         if constexpr (Use_TMA_O) {
-            Tensor mO = params.tma_store_O.get_tma_tensor(params.shape_O)(_, _, bidh, bidb, split_idx);
-            Tensor gO = local_tile(mO, select<0, 1>(TileShape_MNK_PV{}), make_coord(m_block, _0{}));  // (M, K)
-            auto block_tma_O = params.tma_store_O.get_slice(_0{});
-            Tensor tOgO = block_tma_O.partition_D(gO);  // (TMA, TMA_M, TMA_K)
-            Tensor tOsO = block_tma_O.partition_S(sO); // (TMA, TMA_M, TMA_K)
             int warp_idx_sync = __shfl_sync(0xffffffff, thread_idx / cutlass::NumThreadsPerWarp, 0);
             if (warp_idx_sync == NumEpilogueThreads / cutlass::NumThreadsPerWarp - 1) {
                 cutlass::arch::NamedBarrier::sync(NumEpilogueThreads + cutlass::NumThreadsPerWarp,
                                                   cutlass::arch::ReservedNamedBarriers::EpilogueBarrier);
                 if (cute::elect_one_sync()) {
-                    cute::copy(params.tma_store_O, tOsO, tOgO);
+                    if constexpr (SplitTmaM) {
+                        int const o_tile_row = m_block * kBlockM;
+                        Tensor mOPrefix = params.tma_store_O_prefix.get_tma_tensor(params.shape_O)(_, _, bidh, bidb, split_idx);
+                        Tensor mOTail = params.tma_store_O_tail.get_tma_tensor(params.shape_O)(_, _, bidh, bidb, split_idx);
+                        Tensor gOPrefix = local_tile(
+                            domain_offset(make_coord(o_tile_row, _0{}), mOPrefix),
+                            Shape<Int<TmaPrefixM>, Int<kHeadDimV>>{}, make_coord(_0{}, _0{}));
+                        Tensor gOTail = local_tile(
+                            domain_offset(make_coord(o_tile_row + TmaPrefixM, _0{}), mOTail),
+                            Shape<Int<TmaTailM>, Int<kHeadDimV>>{}, make_coord(_0{}, _0{}));
+                        Tensor sOPrefix = make_tensor(
+                            make_smem_ptr(shared_storage.tensors.epilogue.smem_o.data()),
+                            SmemLayoutOTMAPrefix{});
+                        Tensor sOTail = make_tensor(
+                            make_smem_ptr(shared_storage.tensors.epilogue.smem_o.data()
+                                          + cute::cosize_v<SmemLayoutOTMAPrefix>),
+                            SmemLayoutOTMATail{});
+                        auto block_tma_OPrefix = params.tma_store_O_prefix.get_slice(_0{});
+                        auto block_tma_OTail = params.tma_store_O_tail.get_slice(_0{});
+                        Tensor tOPrefixgO = block_tma_OPrefix.partition_D(gOPrefix);
+                        Tensor tOPrefixsO = block_tma_OPrefix.partition_S(sOPrefix);
+                        Tensor tOTailgO = block_tma_OTail.partition_D(gOTail);
+                        Tensor tOTailsO = block_tma_OTail.partition_S(sOTail);
+                        cute::copy(params.tma_store_O_prefix, tOPrefixsO, tOPrefixgO);
+                        cute::copy(params.tma_store_O_tail, tOTailsO, tOTailgO);
+                    } else {
+                        Tensor mO = params.tma_store_O.get_tma_tensor(params.shape_O)(_, _, bidh, bidb, split_idx);
+                        Tensor gO = local_tile(mO, select<0, 1>(TileShape_MNK_PV{}), make_coord(m_block, _0{}));  // (M, K)
+                        auto block_tma_O = params.tma_store_O.get_slice(_0{});
+                        Tensor tOgO = block_tma_O.partition_D(gO);  // (TMA, TMA_M, TMA_K)
+                        Tensor tOsO = block_tma_O.partition_S(sO); // (TMA, TMA_M, TMA_K)
+                        cute::copy(params.tma_store_O, tOsO, tOgO);
+                    }
                     tma_store_arrive();
                     tma_store_wait<0>();
                     #pragma unroll
