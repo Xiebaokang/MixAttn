@@ -120,7 +120,8 @@ def tune(
         stage_limit=stage_limit,
         mode=mode,
     )
-
+    base_configs = [cfg for cfg in base_configs if cfg.num_consumer * 64 == cfg.kBlockM ]
+    print(f"real config count: {len(base_configs)}")
     # base_configs = random.sample(base_configs, rank)
     if not base_configs:
         raise ValueError("base config generation returned no valid configs")
@@ -202,18 +203,18 @@ def tune(
 
 
 if __name__ == "__main__":
-    # tune(shape=(1, 16, 30720, 64), dtype=DType.FP16, causal=False)
-    # tune(shape=(1, 16, 30720, 128), dtype=DType.FP16, causal=False)
-    # tune(shape=(1, 16, 30720, 256), dtype=DType.FP16, causal=False)
-    # tune(shape=(1, 16, 30720, 64), dtype=DType.FP16, causal=True)
-    # tune(shape=(1, 16, 30720, 128), dtype=DType.FP16, causal=True)
-    # tune(shape=(1, 16, 30720, 256), dtype=DType.FP16, causal=True)
+    tune(shape=(1, 16, 30720, 64), dtype=DType.FP16, causal=False, stage_limit=(2, 3), rank=30)
+    tune(shape=(1, 16, 30720, 128), dtype=DType.FP16, causal=False, stage_limit=(2, 3), rank=30)
+    tune(shape=(1, 16, 30720, 256), dtype=DType.FP16, causal=False, stage_limit=(2, 3), rank=30)
+    tune(shape=(1, 16, 30720, 64), dtype=DType.FP16, causal=True, stage_limit=(2, 3), rank=30)
+    tune(shape=(1, 16, 30720, 128), dtype=DType.FP16, causal=True, stage_limit=(2, 3), rank=30)
+    tune(shape=(1, 16, 30720, 256), dtype=DType.FP16, causal=True, stage_limit=(2, 3), rank=30)
 
-    tune(shape=(1, 16, 30720, 64), dtype=DType.FP8, causal=True)
-    tune(shape=(1, 16, 30720, 64), dtype=DType.FP8, causal=False)
-    tune(shape=(1, 16, 30720, 128), dtype=DType.FP8, causal=True)
-    tune(shape=(1, 16, 30720, 128), dtype=DType.FP8, causal=False)
-    tune(shape=(1, 16, 30720, 256), dtype=DType.FP8, causal=True)
-    tune(shape=(1, 16, 30720, 256), dtype=DType.FP8, causal=False)
+    tune(shape=(1, 16, 30720, 64), dtype=DType.FP8, causal=True, rank=30)
+    tune(shape=(1, 16, 30720, 64), dtype=DType.FP8, causal=False, rank=30)
+    tune(shape=(1, 16, 30720, 128), dtype=DType.FP8, causal=True, rank=30)
+    tune(shape=(1, 16, 30720, 128), dtype=DType.FP8, causal=False, rank=30)
+    tune(shape=(1, 16, 30720, 256), dtype=DType.FP8, causal=True, rank=30)
+    tune(shape=(1, 16, 30720, 256), dtype=DType.FP8, causal=False, rank=30)
 
 

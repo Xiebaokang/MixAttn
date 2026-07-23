@@ -6,6 +6,7 @@
 
 #include <cutlass/cutlass.h>
 #include <cutlass/array.h>
+#include <cutlass/arch/memory.h>
 #include <cutlass/numeric_types.h>
 #include <cutlass/numeric_conversion.h>
 #include "cutlass/pipeline/pipeline.hpp"
@@ -405,6 +406,11 @@ struct CollectiveMainloopFwdSm90 {
     static constexpr int P128SmemOffset = 0;
     static constexpr int P64SmemOffset = HasP128 ? cute::cosize_v<SmemLayoutP128> : 0;
     static constexpr int P32SmemOffset = P64SmemOffset + (HasP64 ? cute::cosize_v<SmemLayoutP64> : 0);
+    static_assert(!Is_FP8 ||
+                  (P128SmemOffset % 4 == 0 &&
+                   P64SmemOffset % 4 == 0 &&
+                   P32SmemOffset % 4 == 0),
+                  "FP8 P SMEM regions must preserve u32-store alignment");
     static constexpr int PSmemElements = PBlockM * PSmemCols;
     static_assert(P32SmemOffset + (HasP32 ? cute::cosize_v<SmemLayoutP32> : 0)
                       <= PSmemElements,
@@ -2525,27 +2531,15 @@ struct CollectiveMainloopFwdSm90 {
                                                 auto ncols) {
                     constexpr int StartTile = decltype(start_tile)::value;
                     constexpr int NCols = decltype(ncols)::value;
-                    Tensor tOrPStore =
-                        make_tensor_like<Element>(tOrPPlaceholder);
-                    constexpr int MmaTileCount =
-                        CUTE_STATIC_V(size<2>(tOrPStore));
-                    cute::for_each(
-                        cute::make_int_sequence<MmaTileCount>{},
-                        [&](auto tile_idx) {
-                            constexpr int SrcTile =
-                                StartTile + decltype(tile_idx)::value;
-                            Tensor tOrPAccTile =
-                                tOrPAcc(_, _, Int<SrcTile>{});
-                            Tensor tOrPStoreTile =
-                                tOrPStore(_, _, tile_idx);
-                            static_assert(
-                                CUTE_STATIC_V(size(tOrPAccTile)) ==
-                                CUTE_STATIC_V(size(tOrPStoreTile)));
-                            Tensor tOrPAccView = make_tensor(
-                                tOrPAccTile.data(),
-                                tOrPStoreTile.layout());
-                            convert_type_out(tOrPAccView,
-                                             tOrPStoreTile);
+                    Tensor tOrPStore = make_tensor_like<Element>(tOrPPlaceholder);
+                    constexpr int MmaTileCount = CUTE_STATIC_V(size<2>(tOrPStore));
+                    cute::for_each( cute::make_int_sequence<MmaTileCount>{}, [&](auto tile_idx) {
+                            constexpr int SrcTile = StartTile + decltype(tile_idx)::value;
+                            Tensor tOrPAccTile = tOrPAcc(_, _, Int<SrcTile>{});
+                            Tensor tOrPStoreTile = tOrPStore(_, _, tile_idx);
+                            static_assert( CUTE_STATIC_V(size(tOrPAccTile)) == CUTE_STATIC_V(size(tOrPStoreTile)));
+                            Tensor tOrPAccView = make_tensor(tOrPAccTile.data(), tOrPStoreTile.layout());
+                            convert_type_out(tOrPAccView, tOrPStoreTile);
                             if constexpr (V_colmajor) {
                                 flash::permute_Aregs_fp8(tOrPStoreTile);
                             }
@@ -2554,16 +2548,26 @@ struct CollectiveMainloopFwdSm90 {
                     // partition_A(identity) describes the logical coordinates
                     // owned by this PV register operand. Indexing the swizzled
                     // destination with them gives the physical SS-PV layout.
-                    Tensor cP = cute::make_identity_tensor(
-                        Shape<Int<PBlockM>, Int<NCols>>{});
+                    Tensor cP = cute::make_identity_tensor(Shape<Int<PBlockM>, Int<NCols>>{});
                     Tensor tOcP = thread_mma_pv.partition_A(cP);
-                    static_assert(CUTE_STATIC_V(size(tOcP)) ==
-                                  CUTE_STATIC_V(size(tOrPStore)));
+                    static_assert(CUTE_STATIC_V(size(tOcP)) == CUTE_STATIC_V(size(tOrPStore)));
+                    constexpr int PValues = CUTE_STATIC_V(size(tOrPStore));
+                    static_assert(PValues % 4 == 0,
+                                  "FP8 PV-A ownership must form complete u32 store groups");
+                    // For the GMMA K-major SW32/SW64/SW128 atoms, each four
+                    // consecutive values owned by a PV-A thread map to four
+                    // consecutive, u32-aligned bytes after swizzling.
                     CUTLASS_PRAGMA_UNROLL
-                    for (int i = 0; i < size(tOrPStore); ++i) {
-                        auto const coord = tOcP(i);
-                        sPRegion(get<0>(coord), get<1>(coord)) =
-                            tOrPStore(i);
+                    for (int i = 0; i < PValues; i += 4) {
+                        auto const coord0 = tOcP(i + 0);
+                        auto* dst0 = &sPRegion(get<0>(coord0), get<1>(coord0));
+                        uint32_t const addr0 = cute::cast_smem_ptr_to_uint(dst0);
+                        uint32_t const packed =
+                            uint32_t(tOrPStore(i + 0).raw()) |
+                            (uint32_t(tOrPStore(i + 1).raw()) << 8) |
+                            (uint32_t(tOrPStore(i + 2).raw()) << 16) |
+                            (uint32_t(tOrPStore(i + 3).raw()) << 24);
+                        cutlass::arch::shared_store<4>(addr0, &packed);
                     }
                 };
 

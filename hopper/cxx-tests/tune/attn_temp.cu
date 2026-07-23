@@ -203,7 +203,7 @@ void benchmark(const char* dtype_name, const RunOptions& options) {
   check_cuda(cudaEventCreate(&stop), "cudaEventCreate(stop)");
   check_cuda(cudaEventRecord(start, at::cuda::getCurrentCUDAStream()),
              "cudaEventRecord(start)");
-  for (int i = 0; i < 100; ++i) run();
+  for (int i = 0; i < 200; ++i) run();
   check_cuda(cudaGetLastError(), "timed launch");
   check_cuda(cudaEventRecord(stop, at::cuda::getCurrentCUDAStream()),
              "cudaEventRecord(stop)");
@@ -215,7 +215,7 @@ void benchmark(const char* dtype_name, const RunOptions& options) {
   check_cuda(cudaEventDestroy(start), "cudaEventDestroy(start)");
   check_cuda(cudaEventDestroy(stop), "cudaEventDestroy(stop)");
 
-  const double time_ms = total_ms / 100;
+  const double time_ms = total_ms / 200;
   // QK^T and P*V each cost 2*B*H*S*S*D FLOPs. Causal computes half.
   double flops = 4.0 * kBatch * kNumHeads * kSeqlen * kSeqlen * kHeadDim;
   if constexpr (IsCausal) flops *= 0.5;
