@@ -77,6 +77,7 @@ def tune(
     num_consumer_limit: tuple[int, int] = (2, 3),
     stage_limit: tuple[int, int] = (1, 3),
     bn_rate: float = 0.5,
+    is_orig: bool = False,
     arch: str = "90a",
     jobs: int = 16,
     rank: int = 15,
@@ -120,7 +121,9 @@ def tune(
         stage_limit=stage_limit,
         mode=mode,
     )
-    base_configs = [cfg for cfg in base_configs if cfg.num_consumer * 64 == cfg.kBlockM ]
+    base_configs = [cfg for cfg in base_configs if cfg.num_consumer * 64 == cfg.kBlockM]
+    if is_orig:
+        base_configs = [cfg for cfg in base_configs if cfg.p_smem_k_tiles == 0 and cfg.q_reg_k_tiles == 0]
     print(f"real config count: {len(base_configs)}")
     # base_configs = random.sample(base_configs, rank)
     if not base_configs:
@@ -203,18 +206,27 @@ def tune(
 
 
 if __name__ == "__main__":
-    tune(shape=(1, 16, 30720, 64), dtype=DType.FP16, causal=False, stage_limit=(2, 3), rank=30)
-    tune(shape=(1, 16, 30720, 128), dtype=DType.FP16, causal=False, stage_limit=(2, 3), rank=30)
-    tune(shape=(1, 16, 30720, 256), dtype=DType.FP16, causal=False, stage_limit=(2, 3), rank=30)
-    tune(shape=(1, 16, 30720, 64), dtype=DType.FP16, causal=True, stage_limit=(2, 3), rank=30)
-    tune(shape=(1, 16, 30720, 128), dtype=DType.FP16, causal=True, stage_limit=(2, 3), rank=30)
-    tune(shape=(1, 16, 30720, 256), dtype=DType.FP16, causal=True, stage_limit=(2, 3), rank=30)
+    for is_orig in [False, True]:
+        tune(shape=(1, 16, 30720, 64), dtype=DType.FP16, causal=False, stage_limit=(2, 3), rank=10, is_orig=is_orig, is_orig=is_orig)
+        tune(shape=(1, 16, 30720, 96), dtype=DType.FP16, causal=False, stage_limit=(2, 3), rank=10, is_orig=is_orig)
+        tune(shape=(1, 16, 30720, 128), dtype=DType.FP16, causal=False, stage_limit=(2, 3), rank=10, is_orig=is_orig)
+        tune(shape=(1, 16, 30720, 192), dtype=DType.FP16, causal=False, stage_limit=(2, 3), rank=10, is_orig=is_orig)
+        tune(shape=(1, 16, 30720, 256), dtype=DType.FP16, causal=False, stage_limit=(2, 3), rank=10, is_orig=is_orig)
+        tune(shape=(1, 16, 30720, 64), dtype=DType.FP16, causal=True, stage_limit=(2, 3), rank=10, is_orig=is_orig)
+        tune(shape=(1, 16, 30720, 96), dtype=DType.FP16, causal=True, stage_limit=(2, 3), rank=10, is_orig=is_orig)
+        tune(shape=(1, 16, 30720, 128), dtype=DType.FP16, causal=True, stage_limit=(2, 3), rank=10, is_orig=is_orig)
+        tune(shape=(1, 16, 30720, 192), dtype=DType.FP16, causal=True, stage_limit=(2, 3), rank=10, is_orig=is_orig)
+        tune(shape=(1, 16, 30720, 256), dtype=DType.FP16, causal=True, stage_limit=(2, 3), rank=10, is_orig=is_orig)
 
-    tune(shape=(1, 16, 30720, 64), dtype=DType.FP8, causal=True, rank=30)
-    tune(shape=(1, 16, 30720, 64), dtype=DType.FP8, causal=False, rank=30)
-    tune(shape=(1, 16, 30720, 128), dtype=DType.FP8, causal=True, rank=30)
-    tune(shape=(1, 16, 30720, 128), dtype=DType.FP8, causal=False, rank=30)
-    tune(shape=(1, 16, 30720, 256), dtype=DType.FP8, causal=True, rank=30)
-    tune(shape=(1, 16, 30720, 256), dtype=DType.FP8, causal=False, rank=30)
+        tune(shape=(1, 16, 30720, 64), dtype=DType.FP8, causal=True, rank=10, is_orig=is_orig)
+        tune(shape=(1, 16, 30720, 64), dtype=DType.FP8, causal=False, rank=10, is_orig=is_orig)
+        tune(shape=(1, 16, 30720, 96), dtype=DType.FP8, causal=True, rank=10, is_orig=is_orig)
+        tune(shape=(1, 16, 30720, 96), dtype=DType.FP8, causal=False, rank=10, is_orig=is_orig)
+        tune(shape=(1, 16, 30720, 128), dtype=DType.FP8, causal=True, rank=10, is_orig=is_orig)
+        tune(shape=(1, 16, 30720, 128), dtype=DType.FP8, causal=False, rank=10, is_orig=is_orig)
+        tune(shape=(1, 16, 30720, 192), dtype=DType.FP8, causal=True, rank=10, is_orig=is_orig)
+        tune(shape=(1, 16, 30720, 192), dtype=DType.FP8, causal=False, rank=10, is_orig=is_orig)
+        tune(shape=(1, 16, 30720, 256), dtype=DType.FP8, causal=True, rank=10, is_orig=is_orig)
+        tune(shape=(1, 16, 30720, 256), dtype=DType.FP8, causal=False, rank=10, is_orig=is_orig)
 
 

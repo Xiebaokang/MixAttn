@@ -1,0 +1,2 @@
+DataType,Comment,batchsize,nheads,seqlen,headdim,is_causal,time_ms
+FP16-FP32,fa3,1,16,30720,64,0,11.735896484375

@@ -149,6 +149,30 @@ struct SoftmaxSlice {
         flash::reduce_sum</*zero_init=*/Is_first, /*warp_reduce=*/false>(scores, row_sum);
     }
 
+    template<bool Is_first, int NumTiles, typename Tensor0, typename Callback>
+    __forceinline__ __device__ void online_softmax_reduce_interleaved(
+            Tensor0 &acc_s, Callback const& after_tile) {
+        Tensor scores = make_tensor(acc_s.data(), flash::convert_layout_acc_rowcol(acc_s.layout()));
+        static_assert(CUTE_STATIC_V(size<0>(scores)) == kNRows);
+        static_assert(CUTE_STATIC_V(size<1>(scores)) % NumTiles == 0);
+        constexpr int ColsPerTile = CUTE_STATIC_V(size<1>(scores)) / NumTiles;
+        SumOp<float> sum_op;
+        cute::for_each(cute::make_int_sequence<NumTiles>{}, [&](auto tile) {
+            constexpr int Tile = decltype(tile)::value;
+            CUTLASS_PRAGMA_UNROLL
+            for (int ni = 0; ni < ColsPerTile; ++ni) {
+                CUTLASS_PRAGMA_UNROLL
+                for (int mi = 0; mi < size<0>(scores); ++mi) {
+                    constexpr bool FirstTile = Tile == 0;
+                    row_sum(mi) = Is_first && FirstTile && ni == 0
+                        ? scores(mi, Tile * ColsPerTile + ni)
+                        : sum_op(row_sum(mi), scores(mi, Tile * ColsPerTile + ni));
+                }
+            }
+            after_tile(tile);
+        });
+    }
+
     __forceinline__ __device__ auto finalize(float const final_scale=1.f) {
         SumOp<float> sum_op;
         quad_allreduce_(row_sum, row_sum, sum_op);
@@ -261,6 +285,30 @@ struct Softmax {
         Tensor scores = make_tensor(acc_s.data(), flash::convert_layout_acc_rowcol(acc_s.layout()));
         static_assert(CUTE_STATIC_V(size<0>(scores)) == kNRows);
         flash::reduce_sum</*zero_init=*/Is_first, /*warp_reduce=*/false>(scores, row_sum);
+    };
+
+    template<bool Is_first, int NumTiles, typename Tensor0, typename Callback>
+    __forceinline__ __device__ void online_softmax_reduce_interleaved(
+            Tensor0 &acc_s, Callback const& after_tile) {
+        Tensor scores = make_tensor(acc_s.data(), flash::convert_layout_acc_rowcol(acc_s.layout()));
+        static_assert(CUTE_STATIC_V(size<0>(scores)) == kNRows);
+        static_assert(CUTE_STATIC_V(size<1>(scores)) % NumTiles == 0);
+        constexpr int ColsPerTile = CUTE_STATIC_V(size<1>(scores)) / NumTiles;
+        SumOp<float> sum_op;
+        cute::for_each(cute::make_int_sequence<NumTiles>{}, [&](auto tile) {
+            constexpr int Tile = decltype(tile)::value;
+            CUTLASS_PRAGMA_UNROLL
+            for (int ni = 0; ni < ColsPerTile; ++ni) {
+                CUTLASS_PRAGMA_UNROLL
+                for (int mi = 0; mi < size<0>(scores); ++mi) {
+                    constexpr bool FirstTile = Tile == 0;
+                    row_sum(mi) = Is_first && FirstTile && ni == 0
+                        ? scores(mi, Tile * ColsPerTile + ni)
+                        : sum_op(row_sum(mi), scores(mi, Tile * ColsPerTile + ni));
+                }
+            }
+            after_tile(tile);
+        });
     };
     __forceinline__ __device__ TensorT finalize(float const final_scale=1.f) {
         SumOp<float> sum_op;

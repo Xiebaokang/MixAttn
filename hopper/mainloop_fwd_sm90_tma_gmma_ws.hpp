@@ -167,6 +167,12 @@ struct CollectiveMainloopFwdSm90 {
     static constexpr int PKTilesPerSW128 = 128 / (sizeof(Element) * MmaK);
     static constexpr int PKTilesPerSW64 = 64 / (sizeof(Element) * MmaK);
     static constexpr int PKTilesPerSW32 = 32 / (sizeof(Element) * MmaK);
+    // Interleave P production only when the SMEM prefix contains at least one
+    // complete SW128 region. Smaller prefixes keep the whole-region store.
+    static constexpr int PInterleaveThreshold =
+        128 / (sizeof(Element) * MmaK);
+    static constexpr bool UseInterleavedPStore =
+        PSmemKTiles >= PInterleaveThreshold;
     // SS-PV uses P and V as two SMEM descriptors.  Do not give the compact P
     // prefix a wider swizzle than the full V tile: for example BN=208 FP16
     // selects SW32 for V, so an independently selected SW128 P prefix produces
@@ -441,6 +447,7 @@ struct CollectiveMainloopFwdSm90 {
     using SmemTiledCopyP128 = SmemTiledCopyPPart<P128ColsSafe>;
     using SmemTiledCopyP64 = SmemTiledCopyPPart<P64ColsSafe>;
     using SmemTiledCopyP32 = SmemTiledCopyPPart<P32ColsSafe>;
+    using SmemTiledCopyP16 = SmemTiledCopyPPart<16>;
 #endif
 
     // Use LDSM.T and STSM to transpose V in the case of FP8 and V being row-major.
@@ -2364,9 +2371,11 @@ struct CollectiveMainloopFwdSm90 {
         SmemTiledCopyP128 smem_tiled_copy_P128;
         SmemTiledCopyP64 smem_tiled_copy_P64;
         SmemTiledCopyP32 smem_tiled_copy_P32;
+        SmemTiledCopyP16 smem_tiled_copy_P16;
         auto smem_thr_copy_P128 = smem_tiled_copy_P128.get_thread_slice(thread_idx);
         auto smem_thr_copy_P64 = smem_tiled_copy_P64.get_thread_slice(thread_idx);
         auto smem_thr_copy_P32 = smem_tiled_copy_P32.get_thread_slice(thread_idx);
+        auto smem_thr_copy_P16 = smem_tiled_copy_P16.get_thread_slice(thread_idx);
 #else
         auto smem_tiled_copy_P = make_tiled_copy_C(SmemCopyAtomP{}, tiled_mma_qk);
         auto smem_thr_copy_P = smem_tiled_copy_P.get_thread_slice(thread_idx);
@@ -2399,6 +2408,8 @@ struct CollectiveMainloopFwdSm90 {
             make_p_reg_placeholder(Int<P64ColsSafe>{}));
         Tensor tOrP32Placeholder = thread_mma_pv.partition_fragment_A(
             make_p_reg_placeholder(Int<P32ColsSafe>{}));
+        Tensor tOrPMmaKPlaceholder = thread_mma_pv.partition_fragment_A(
+            make_p_reg_placeholder(Int<MmaK>{}));
         Tensor gPRegPlaceholder = make_tensor(
             make_gmem_ptr(static_cast<Element const*>(nullptr)),
             make_layout(Shape<Int<PBlockM>, Int<PRegColsSafe>>{},
@@ -2435,6 +2446,17 @@ struct CollectiveMainloopFwdSm90 {
                 return smem_thr_copy_P32.partition_D(sP);
             }
         }();
+        auto partition_P16 = [&](auto& sPRegion) {
+            auto sP = cute::as_position_independent_swizzle_tensor(sPRegion);
+            if constexpr (Is_FP8) {
+                return smem_thr_copy_P16.partition_D(recast<uint16_t>(sP));
+            } else {
+                return smem_thr_copy_P16.partition_D(sP);
+            }
+        };
+        Tensor tPsP16_128 = partition_P16(sP128);
+        Tensor tPsP16_64 = partition_P16(sP64);
+        Tensor tPsP16_32 = partition_P16(sP32);
 #else
         Tensor tPsP = smem_thr_copy_P.partition_D(cute::as_position_independent_swizzle_tensor(sP));
 #endif
@@ -2626,6 +2648,77 @@ struct CollectiveMainloopFwdSm90 {
             }
         };
 
+        // Materialize one MMA-K P tile at a time. FP16 uses a 16-column STSM;
+        // FP8 packs one 32-column tile into ordinary shared-memory stores.
+        auto convert_store_P_smem_tile = [&](auto& tSrS, auto tile_idx) {
+            if constexpr (HasPSmem) {
+                constexpr int Tile = decltype(tile_idx)::value;
+                Tensor tOrPAcc = make_tensor(
+                    tSrS.data(), flash::convert_layout_acc_Aregs<TiledMmaPV>(tSrS.layout()));
+                Tensor tOrPAccTile = tOrPAcc(_, _, Int<Tile>{});
+                Tensor tOrPStoreTile = make_tensor_like<Element>(tOrPMmaKPlaceholder);
+                Tensor tOrPAccView = make_tensor(
+                    tOrPAccTile.data(), tOrPStoreTile.layout());
+                convert_type_out(tOrPAccView, tOrPStoreTile);
+                if constexpr (Is_FP8) {
+                    if constexpr (V_colmajor) {
+                        flash::permute_Aregs_fp8(tOrPStoreTile);
+                    }
+                    Tensor cP = cute::make_identity_tensor(
+                        Shape<Int<PBlockM>, Int<MmaK>>{});
+                    Tensor tOcP = thread_mma_pv.partition_A(cP);
+                    static_assert(CUTE_STATIC_V(size(tOcP)) ==
+                                  CUTE_STATIC_V(size(tOrPStoreTile)));
+                    constexpr int PValues = CUTE_STATIC_V(size(tOrPStoreTile));
+                    static_assert(PValues % 4 == 0);
+                    auto store_tile = [&](auto& sPRegion, auto local_tile) {
+                        constexpr int LocalTile = decltype(local_tile)::value;
+                        CUTLASS_PRAGMA_UNROLL
+                        for (int i = 0; i < PValues; i += 4) {
+                            auto const coord0 = tOcP(i);
+                            auto* dst0 = &sPRegion(
+                                get<0>(coord0),
+                                LocalTile * MmaK + get<1>(coord0));
+                            uint32_t const addr0 =
+                                cute::cast_smem_ptr_to_uint(dst0);
+                            uint32_t const packed =
+                                uint32_t(tOrPStoreTile(i + 0).raw()) |
+                                (uint32_t(tOrPStoreTile(i + 1).raw()) << 8) |
+                                (uint32_t(tOrPStoreTile(i + 2).raw()) << 16) |
+                                (uint32_t(tOrPStoreTile(i + 3).raw()) << 24);
+                            cutlass::arch::shared_store<4>(addr0, &packed);
+                        }
+                    };
+                    if constexpr (Tile < P128KTiles) {
+                        store_tile(sP128, Int<Tile>{});
+                    } else if constexpr (Tile < P128KTiles + P64KTiles) {
+                        store_tile(sP64, Int<Tile - P128KTiles>{});
+                    } else {
+                        store_tile(
+                            sP32,
+                            Int<Tile - P128KTiles - P64KTiles>{});
+                    }
+                } else {
+                    Tensor tPrP = smem_thr_copy_P16.retile_S(tOrPStoreTile);
+                    if constexpr (Tile < P128KTiles) {
+                        cute::copy(smem_tiled_copy_P16, tPrP(_, _, _0{}),
+                                   tPsP16_128(_, _, Int<Tile>{}));
+                    } else if constexpr (Tile < P128KTiles + P64KTiles) {
+                        cute::copy(
+                            smem_tiled_copy_P16, tPrP(_, _, _0{}),
+                            tPsP16_64(
+                                _, _, Int<Tile - P128KTiles>{}));
+                    } else {
+                        cute::copy(
+                            smem_tiled_copy_P16, tPrP(_, _, _0{}),
+                            tPsP16_32(
+                                _, _,
+                                Int<Tile - P128KTiles - P64KTiles>{}));
+                    }
+                }
+            }
+        };
+
         auto convert_P_reg_suffix = [&](auto& tSrS, auto& tOrPReg) {
             if constexpr (HasPReg) {
                 Tensor tOrPAcc = make_tensor(
@@ -2675,6 +2768,34 @@ struct CollectiveMainloopFwdSm90 {
                 convert_store_P_smem_prefix(tSrS);
                 softmax.template online_softmax_reduce<Is_first>(tSrS);
                 convert_P_reg_suffix(tSrS, tOrP);
+            }
+        };
+
+        auto produce_P = [&](auto& tSrS, auto& tOrP, auto is_first_type) {
+            if constexpr (!UseInterleavedPStore) {
+                softmax_store_reduce(tSrS, tOrP, is_first_type);
+            } else {
+                constexpr bool Is_first = decltype(is_first_type)::value;
+                if constexpr (!Is_FP8 || V_colmajor) {
+                    auto after_tile = [&](auto tile) {
+                        constexpr int Tile = decltype(tile)::value;
+                        if constexpr (Tile < PSmemKTiles) {
+                            convert_store_P_smem_tile(tSrS, tile);
+                        }
+                    };
+                    softmax.template online_softmax_reduce_interleaved<
+                        Is_first, PTotalKTiles>(tSrS, after_tile);
+                    convert_P_reg_suffix(tSrS, tOrP);
+                } else {
+                    softmax.template online_softmax_reduce<Is_first>(tSrS);
+                    flash::permute_Cregs_fp8(tSrS);
+                    cute::for_each(
+                        cute::make_int_sequence<PSmemKTiles>{},
+                        [&](auto tile) {
+                            convert_store_P_smem_tile(tSrS, tile);
+                        });
+                    convert_P_reg_suffix(tSrS, tOrP);
+                }
             }
         };
 #endif
@@ -2889,7 +3010,15 @@ struct CollectiveMainloopFwdSm90 {
 
             auto materialize_p = [&] {
                 if constexpr (HasPSmem) {
-                    convert_store_P_smem_prefix(tSrS);
+                    if constexpr (UseInterleavedPStore) {
+                        cute::for_each(
+                            cute::make_int_sequence<PSmemKTiles>{},
+                            [&](auto tile) {
+                                convert_store_P_smem_tile(tSrS, tile);
+                            });
+                    } else {
+                        convert_store_P_smem_prefix(tSrS);
+                    }
                     convert_P_reg_suffix(tSrS, tOrP);
                 } else {
                     convert_type_out(tOrPAcc, tOrP);
@@ -3052,7 +3181,7 @@ struct CollectiveMainloopFwdSm90 {
             }();
             if constexpr (HasPSmem) {
                 softmax.template online_softmax_exp</*Check_inf=*/true>(tSrS);
-                softmax_store_reduce(tSrS, tOrP, cute::true_type{});
+                produce_P(tSrS, tOrP, cute::true_type{});
             } else {
                 softmax.template online_softmax</*Is_first=*/true, /*Check_inf=*/true>(tSrS);
                 if constexpr (Is_FP8 && !V_colmajor) { flash::permute_Cregs_fp8(tSrS); }
@@ -3122,7 +3251,7 @@ struct CollectiveMainloopFwdSm90 {
                 if constexpr (HasPSmem) {
                     // The previous PV uses tOrP and smemP asynchronously.  Reuse
                     // them only after wait<0>, then overlap STSM with reduce_sum.
-                    softmax_store_reduce(tSrS, tOrP, cute::false_type{});
+                    produce_P(tSrS, tOrP, cute::false_type{});
                 } else {
                     if constexpr (Is_FP8 && !V_colmajor) { flash::permute_Cregs_fp8(tSrS); }
                     convert_type_out(make_tensor(tSrS.data(), tOrP.layout()), tOrP);
