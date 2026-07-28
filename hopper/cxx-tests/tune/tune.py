@@ -206,27 +206,17 @@ def tune(
 
 
 if __name__ == "__main__":
-    for is_orig in [False, True]:
-        tune(shape=(1, 16, 30720, 64), dtype=DType.FP16, causal=False, stage_limit=(2, 3), rank=10, is_orig=is_orig, is_orig=is_orig)
-        tune(shape=(1, 16, 30720, 96), dtype=DType.FP16, causal=False, stage_limit=(2, 3), rank=10, is_orig=is_orig)
-        tune(shape=(1, 16, 30720, 128), dtype=DType.FP16, causal=False, stage_limit=(2, 3), rank=10, is_orig=is_orig)
-        tune(shape=(1, 16, 30720, 192), dtype=DType.FP16, causal=False, stage_limit=(2, 3), rank=10, is_orig=is_orig)
-        tune(shape=(1, 16, 30720, 256), dtype=DType.FP16, causal=False, stage_limit=(2, 3), rank=10, is_orig=is_orig)
-        tune(shape=(1, 16, 30720, 64), dtype=DType.FP16, causal=True, stage_limit=(2, 3), rank=10, is_orig=is_orig)
-        tune(shape=(1, 16, 30720, 96), dtype=DType.FP16, causal=True, stage_limit=(2, 3), rank=10, is_orig=is_orig)
-        tune(shape=(1, 16, 30720, 128), dtype=DType.FP16, causal=True, stage_limit=(2, 3), rank=10, is_orig=is_orig)
-        tune(shape=(1, 16, 30720, 192), dtype=DType.FP16, causal=True, stage_limit=(2, 3), rank=10, is_orig=is_orig)
-        tune(shape=(1, 16, 30720, 256), dtype=DType.FP16, causal=True, stage_limit=(2, 3), rank=10, is_orig=is_orig)
-
-        tune(shape=(1, 16, 30720, 64), dtype=DType.FP8, causal=True, rank=10, is_orig=is_orig)
-        tune(shape=(1, 16, 30720, 64), dtype=DType.FP8, causal=False, rank=10, is_orig=is_orig)
-        tune(shape=(1, 16, 30720, 96), dtype=DType.FP8, causal=True, rank=10, is_orig=is_orig)
-        tune(shape=(1, 16, 30720, 96), dtype=DType.FP8, causal=False, rank=10, is_orig=is_orig)
-        tune(shape=(1, 16, 30720, 128), dtype=DType.FP8, causal=True, rank=10, is_orig=is_orig)
-        tune(shape=(1, 16, 30720, 128), dtype=DType.FP8, causal=False, rank=10, is_orig=is_orig)
-        tune(shape=(1, 16, 30720, 192), dtype=DType.FP8, causal=True, rank=10, is_orig=is_orig)
-        tune(shape=(1, 16, 30720, 192), dtype=DType.FP8, causal=False, rank=10, is_orig=is_orig)
-        tune(shape=(1, 16, 30720, 256), dtype=DType.FP8, causal=True, rank=10, is_orig=is_orig)
-        tune(shape=(1, 16, 30720, 256), dtype=DType.FP8, causal=False, rank=10, is_orig=is_orig)
-
-
+    B, H, S = 1, 16, 30720
+    DS = [64, 96, 128, 192, 256]
+    dtypes = [DType.FP16, DType.FP8]
+    is_causal = [True, False]
+    is_origin = [True, False]
+    for D in DS:
+        shape = (B, H, S, D)
+        for dtype in dtypes:
+            for causal in is_causal:
+                for is_orig in is_origin:
+                    if dtype == DType.FP16:
+                        tune(shape=shape, dtype=dtype, causal=causal, stage_limit=(2, 3), rank=10, is_orig=is_orig)
+                    else:
+                        tune(shape=shape, dtype=dtype, causal=causal, rank=10, is_orig=is_orig)
