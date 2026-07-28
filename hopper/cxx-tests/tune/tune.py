@@ -12,6 +12,8 @@ from configure import (
     mix_wgmma_third_configs,
 )
 
+HERE = Path(__file__).resolve().parent
+
 
 def get_best_result(
     origin_ret: list[BenchResult],
@@ -108,7 +110,7 @@ def tune(
     if not 0 <= final_register_usage_level <= 10:
         raise ValueError("final_register_usage_level must be in [0, 10]")
 
-    result_dir = Path(__file__).resolve().parent / "results" if result_dir is None else result_dir
+    result_dir = HERE / "results" if result_dir is None else result_dir
     elem_width = 1 if dtype is DType.FP8 else 2
     base_configs = mix_wgmma_base_configs(
         HD=shape[-1],
@@ -216,7 +218,23 @@ if __name__ == "__main__":
         for dtype in dtypes:
             for causal in is_causal:
                 for is_orig in is_origin:
+                    result_dir = HERE / "mix_results" if not is_orig else HERE / "origin_results"
                     if dtype == DType.FP16:
-                        tune(shape=shape, dtype=dtype, causal=causal, stage_limit=(2, 3), rank=10, is_orig=is_orig)
+                        tune(
+                            shape=shape, 
+                            dtype=dtype, 
+                            causal=causal, 
+                            stage_limit=(2, 3), 
+                            rank=10, 
+                            is_orig=is_orig, 
+                            result_dir=result_dir
+                            )
                     else:
-                        tune(shape=shape, dtype=dtype, causal=causal, rank=10, is_orig=is_orig)
+                        tune(
+                            shape=shape, 
+                            dtype=dtype, 
+                            causal=causal, 
+                            rank=10, 
+                            is_orig=is_orig, 
+                            result_dir=result_dir
+                            )
